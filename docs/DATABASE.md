@@ -107,7 +107,46 @@ UNIQUE(book_id, sort_order)
 
 Do not store `previous_chapter_id` or `next_chapter_id`. Previous/next navigation is derived from `book_id + sort_order` among published chapters.
 
-## 6. `comments`
+## 6. Slug Format
+
+All book and chapter slugs must be stable ASCII strings.
+
+**Generation rule (implemented in `lib/slug.ts`):**
+
+1. Transliterate Russian Cyrillic to Latin using the BGN/PCGN-derived table in `lib/slug.ts`.
+2. NFKD-normalize and strip Latin combining marks.
+3. Lowercase.
+4. Replace any sequence of non-alphanumeric characters with a single hyphen.
+5. Strip leading and trailing hyphens.
+6. Fall back to `"untitled"` if the result is empty.
+
+Examples:
+
+```text
+Шум дождя                → shum-dozhdya
+Глава 1                  → glava-1
+Ёжик в тумане            → yozhik-v-tumane
+Часть 2: Возвращение     → chast-2-vozvrashchenie
+```
+
+**Collision strategy:**
+
+- Books: unique per `(section_id, slug)`. Suffix `-2`, `-3`, … appended until free.
+- Chapters: unique per `(book_id, slug)`. Same strategy.
+
+**Immutability:**
+
+Slugs are generated when a record is first created. Editing the title later does **not** update the slug. This protects existing bookmarks and WordPress redirect mappings.
+
+**Section slugs:**
+
+Section slugs are hand-assigned ASCII identifiers (e.g. `originals`, `fanfiction`, `translations`) and are not auto-generated. They remain unchanged.
+
+**Legacy URLs:**
+
+`legacy_url` stores the original WordPress URL for redirect mapping. It is preserved separately and is never used as the source for a new Transmagia slug.
+
+## 8. `comments`
 
 Suggested columns:
 
@@ -123,7 +162,7 @@ updated_at       timestamptz NOT NULL DEFAULT now()
 
 Initial status can be `published` / `deleted` with soft-delete semantics.
 
-## 7. Relationships
+## 9. Relationships
 
 ```text
 auth.users 1 ── 1 profiles
@@ -133,13 +172,13 @@ books      1 ──< chapters
 chapters   1 ──< comments
 ```
 
-## 8. Media
+## 10. Media
 
 Book covers and in-content images should use Supabase Storage.
 
 Database rows should keep storage paths/identifiers rather than embedding provider secrets or public management credentials.
 
-## 9. Indexes
+## 11. Indexes
 
 At minimum, index:
 
@@ -149,7 +188,7 @@ At minimum, index:
 - `comments.chapter_id`
 - `comments.user_id`
 
-## 10. Migration Fields
+## 12. Migration Fields
 
 Keep legacy tracing fields during migration:
 
@@ -158,7 +197,7 @@ Keep legacy tracing fields during migration:
 
 These fields allow an imported record to be traced back to WordPress and support redirect mapping.
 
-## 11. Potential Future Entities
+## 13. Potential Future Entities
 
 Do not add future tables until they are required.
 

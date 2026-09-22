@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -w '\\\\n---STATUS:%{http_code}---' -H 'RSC: 1' -H 'Next-Router-State-Tree: %5B%22%22%2C%7B%22children%22%3A%5B%22originals%22%2C%7B%22children%22%3A%5B%22%5C%u0448%5C%u0443%5C%u043C-%5C%u0434%5C%u043E%5C%u0436%5C%u0434%5C%u044F%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%5D%7D%5D%7D%5D%7D%5D' http://localhost:3000/originals/%D1%88%D1%83%D0%BC-%D0%B4%D0%BE%D0%B6%D0%B4%D1%8F)",
+      "Bash(curl -s -I \"http://localhost:3000/originals/%D1%88%D1%83%D0%BC-%D0%B4%D0%BE%D0%B6%D0%B4%D1%8F\")",
+      "Bash(curl -s -I -H 'RSC: 1' http://localhost:3000/originals/%D1%88%D1%83%D0%BC-%D0%B4%D0%BE%D0%B6%D0%B4%D1%8F)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --globoff \"http://localhost:3000/originals/шум-дождя\")",
+      "Bash(curl -s -I --globoff \"http://localhost:3000/originals/шум-дождя\")",
+      "Bash(curl -sv -L \"http://localhost:3000/originals/%D1%88%D1%83%D0%BC-%D0%B4%D0%BE%D0%B6%D0%B4%D1%8F\")",
+      "Bash(npm run *)",
+      "Bash(node -e \"const {slugify} = require\\('./lib/slug.ts'\\); console.log\\(slugify\\('Шум дождя'\\)\\)\")",
+      "Bash(node --input-type=module)",
+      "Bash(Read \"C:\\\\Users\\\\IMELES~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-imeleskevic-projects-transmagia\\\\49d1a259-807d-4f69-ab1b-19eb4848cfd6\\\\tasks\\\\bqm4oihga.output\")",
+      "Bash(npm test *)"
+    ]
+  }
+}

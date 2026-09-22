@@ -1,15 +1,10 @@
 import "server-only";
 
+import { slugify } from "@/lib/slug";
+
 export type AdminStatus = "draft" | "published";
 
-export function slugify(value: string): string {
-    return value
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9а-яё]+/gi, "-")
-        .replace(/^-+|-+$/g, "") || "untitled";
-}
+export { slugify };
 
 export function parseStatus(value: FormDataEntryValue | null, publishValue?: FormDataEntryValue | null): AdminStatus {
     if (publishValue === "published") return "published";

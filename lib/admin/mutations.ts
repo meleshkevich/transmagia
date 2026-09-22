@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { optionalText, parsePositiveInteger, parseStatus, requiredText, slugify, validateImage } from "@/lib/admin/validation";
+import { findUniqueSuffix, slugify } from "@/lib/slug";
+import { optionalText, parsePositiveInteger, parseStatus, requiredText, validateImage } from "@/lib/admin/validation";
 
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const MAX_CONTENT_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -38,10 +39,7 @@ async function uniqueSlug(table: "books" | "chapters", baseSlug: string, scopeCo
     if (error) throw new Error("Не удалось подготовить адрес записи.");
 
     const used = new Set((data ?? []).map((row) => row.slug));
-    if (!used.has(baseSlug)) return baseSlug;
-    let suffix = 2;
-    while (used.has(`${baseSlug}-${suffix}`)) suffix += 1;
-    return `${baseSlug}-${suffix}`;
+    return findUniqueSuffix(baseSlug, used);
 }
 
 export async function createBook(formData: FormData): Promise<MutationState> {

@@ -142,19 +142,37 @@ Preserve:
 
 These allow source tracing and redirect mapping.
 
-## 8. Media Migration
+## 8. Slug Generation for Imported Content
+
+Imported books and chapters receive new Transmagia slugs generated from their titles, not derived from the WordPress URL.
+
+**Rule:** pass the title through `slugify()` from `lib/slug.ts`, which transliterates Cyrillic to Latin and produces a stable ASCII slug.
+
+Example:
+
+```text
+title:       Шум дождя
+new slug:    shum-dozhdya
+legacy_url:  https://transmagia.house/шум-дождя/
+```
+
+The `legacy_url` is stored separately for redirect mapping and source tracing. It is never parsed or decoded to generate the Transmagia slug.
+
+Duplicate protection for imported chapters uses `legacy_url` uniqueness to prevent re-importing the same WordPress post. Slug collision handling (suffix `-2`, `-3`, …) applies to the generated ASCII slug within the target book.
+
+## 9. Media Migration
 
 Book covers and in-content images should be copied into Supabase Storage where practical.
 
 The importer should rewrite references in imported content to point to the new storage paths/URLs.
 
-## 9. Redirects
+## 10. Redirects
 
 After migration, map legacy WordPress URLs to their new equivalents where possible.
 
 This protects existing bookmarks and external links.
 
-## 10. Migration Safety
+## 11. Migration Safety
 
 Keep the old WordPress site operational while the new system is validated.
 
@@ -168,6 +186,6 @@ Recommended approach:
 6. import production data;
 7. switch the domain after verification.
 
-## 11. WordPress Access Method
+## 12. WordPress Access Method
 
 The migration tool may use the WordPress REST API, an export/WXR file, or another reliable read-only source available from the site. The implementation should choose the most stable source after testing the live WordPress installation.

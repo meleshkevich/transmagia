@@ -7,10 +7,11 @@ import { ReaderSurface } from "@/components/reader/reader-surface";
 import { SectionGate } from "@/components/reader/section-gate";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { getChapterPageData, getPublishedChapterMetadata } from "@/lib/reader/data";
+import { decodeParam } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string; bookSlug: string; chapterSlug: string }> }): Promise<Metadata> {
     const { section, bookSlug, chapterSlug } = await params;
-    const result = await getPublishedChapterMetadata(section, bookSlug, chapterSlug);
+    const result = await getPublishedChapterMetadata(decodeParam(section), decodeParam(bookSlug), decodeParam(chapterSlug));
     if (!result) return {};
     return {
         title: `${result.chapter.title} — ${result.book.title}`,
@@ -19,7 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
 }
 
 export default async function ChapterPage({ params }: { params: Promise<{ section: string; bookSlug: string; chapterSlug: string }> }) {
-    const { section: sectionSlug, bookSlug, chapterSlug } = await params;
+    const { section: rawSection, bookSlug: rawBookSlug, chapterSlug: rawChapterSlug } = await params;
+    const sectionSlug = decodeParam(rawSection);
+    const bookSlug = decodeParam(rawBookSlug);
+    const chapterSlug = decodeParam(rawChapterSlug);
     const result = await getChapterPageData(sectionSlug, bookSlug, chapterSlug);
     if (!result) notFound();
 

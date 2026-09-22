@@ -4,10 +4,11 @@ import { notFound } from "next/navigation";
 
 import { ReaderHeader } from "@/components/reader/reader-header";
 import { getPublishedBook, getPublishedChapters } from "@/lib/reader/data";
+import { decodeParam } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string; bookSlug: string }> }): Promise<Metadata> {
     const { section, bookSlug } = await params;
-    const result = await getPublishedBook(section, bookSlug);
+    const result = await getPublishedBook(decodeParam(section), decodeParam(bookSlug));
     if (!result) return {};
     return {
         title: result.book.title,
@@ -16,7 +17,9 @@ export async function generateMetadata({ params }: { params: Promise<{ section: 
 }
 
 export default async function BookPage({ params }: { params: Promise<{ section: string; bookSlug: string }> }) {
-    const { section: sectionSlug, bookSlug } = await params;
+    const { section: rawSection, bookSlug: rawBookSlug } = await params;
+    const sectionSlug = decodeParam(rawSection);
+    const bookSlug = decodeParam(rawBookSlug);
     const result = await getPublishedBook(sectionSlug, bookSlug);
     if (!result) notFound();
 
