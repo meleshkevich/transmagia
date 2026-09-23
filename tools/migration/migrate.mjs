@@ -13,12 +13,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { fetchWordPressPage, extractChapterLinks, parseChapterHtml } from "./lib/parser.mjs";
+import { fetchWordPressPage, extractChapterLinks, parseChapterHtml, normalizeUrl } from "./lib/parser.mjs";
 import { slugify, findUniqueSuffix } from "./lib/slug.mjs";
 import {
     createSupabaseClient,
     findSectionBySlug,
     findBookByLegacyUrl,
+    findBookByWpId,
+    findBookBySectionAndSlug,
     findChapterByLegacyUrl,
     findChapterByWpId,
     insertBook,
@@ -105,6 +107,7 @@ async function processBook(csvRow, existingCheck) {
         slug: "",
         section: csvRow.section,
         legacyUrl: csvRow.url,
+        legacyWpId: null,
         chapters: [],
         warnings: [],
         errors: [],
@@ -112,15 +115,7 @@ async function processBook(csvRow, existingCheck) {
         alreadyImported: null,
     };
 
-    // Check if already imported
-    if (existingCheck) {
-        const existing = await existingCheck.findBook(csvRow.url);
-        if (existing) {
-            result.alreadyImported = existing;
-        }
-    }
-
-    // Fetch book page
+    // Fetch book page first — WP page ID (needed for identity check) is only in the HTML.
     let bookHtml;
     try {
         const { ok, status, html } = await fetchWordPressPage(csvRow.url);
@@ -133,6 +128,39 @@ async function processBook(csvRow, existingCheck) {
     } catch (err) {
         result.errors.push(`Book page fetch error: ${err instanceof Error ? err.message : String(err)}`);
         return result;
+    }
+
+    // Extract WordPress page ID from body class (page-id-NNN for Pages, postid-NNN for Posts).
+    const bodyClassMatch = bookHtml.match(/<body[^>]*class="([^"]*)"/i);
+    const bodyClass = bodyClassMatch ? bodyClassMatch[1] : "";
+    const wpIdMatch = bodyClass.match(/(?:page-id|postid)-(\d+)/);
+    result.legacyWpId = wpIdMatch ? Number(wpIdMatch[1]) : null;
+
+    // Book identity check — 3 tiers:
+    //   1. WP page ID (most reliable; survives URL slug changes)
+    //   2. Normalized legacy_url (secondary)
+    //   3. Section + generated slug (conflict guard — never auto-insert with suffix)
+    if (existingCheck) {
+        let existing = null;
+        if (result.legacyWpId != null) {
+            existing = await existingCheck.findBookByWpId(result.legacyWpId);
+        }
+        if (!existing) {
+            existing = await existingCheck.findBook(normalizeUrl(csvRow.url));
+        }
+        if (existing) {
+            result.alreadyImported = existing;
+        } else {
+            const bookSlug = slugify(csvRow.title);
+            const conflict = await existingCheck.findBookConflict(csvRow.section, bookSlug);
+            if (conflict) {
+                result.errors.push(
+                    `Book slug conflict: "${bookSlug}" already exists in section "${csvRow.section}" ` +
+                    `(id: ${conflict.id}) but has no matching legacy identity (legacy_url/legacy_wp_id are null). ` +
+                    `Attach the legacy identity fields to this book first, then retry.`
+                );
+            }
+        }
     }
 
     // Extract chapter links
@@ -283,10 +311,11 @@ function formatReport(books, crossValidation, mode) {
         lines.push(`  New slug:    ${book.slug || slugify(book.title)}`);
         lines.push(`  Section:     ${book.section}`);
         lines.push(`  Source URL:  ${book.legacyUrl}`);
+        if (book.legacyWpId != null) lines.push(`  WP page ID:  ${book.legacyWpId}`);
         lines.push(`  Book page:   ${book.bookPageOk ? "✓ reachable" : "✗ unreachable"}`);
 
         if (book.alreadyImported) {
-            lines.push(`  Already imported as book: ${book.alreadyImported.id} (${book.alreadyImported.slug})`);
+            lines.push(`  ↩ Existing migration target: id=${book.alreadyImported.id} slug=${book.alreadyImported.slug}`);
         }
 
         lines.push(`  Chapters found: ${book.chapters.length}`);
@@ -374,19 +403,36 @@ async function runImport(books, supabase) {
             continue;
         }
 
-        let bookRecord = await findBookByLegacyUrl(supabase, book.legacyUrl);
+        // 3-tier book identity check (mirrors processBook logic — belt and suspenders)
+        let bookRecord = null;
+        if (book.legacyWpId != null) {
+            bookRecord = await findBookByWpId(supabase, book.legacyWpId);
+        }
         if (!bookRecord) {
-            const slug = findUniqueSuffix(slugify(book.title), usedBookSlugs);
-            usedBookSlugs.add(slug);
+            bookRecord = await findBookByLegacyUrl(supabase, normalizeUrl(book.legacyUrl));
+        }
+        if (bookRecord) {
+            console.log(`↩ Book already exists: "${book.title}" (${bookRecord.id})`);
+        } else {
+            // Guard against slug collision without legacy identity — never create slug-2
+            const existingBySlug = await findBookBySectionAndSlug(supabase, section.id, book.slug);
+            if (existingBySlug) {
+                console.error(
+                    `✗ Book slug conflict: "${book.slug}" in section "${book.section}" ` +
+                    `(id: ${existingBySlug.id}) has no legacy identity — skipping book and its chapters`
+                );
+                continue;
+            }
+            const bookSlug = findUniqueSuffix(slugify(book.title), usedBookSlugs);
+            usedBookSlugs.add(bookSlug);
             bookRecord = await insertBook(supabase, {
                 sectionId: section.id,
                 title: book.title,
-                slug,
-                legacyUrl: book.legacyUrl,
+                slug: bookSlug,
+                legacyUrl: normalizeUrl(book.legacyUrl),
+                legacyWpId: book.legacyWpId ?? null,
             });
             console.log(`✓ Book created: "${book.title}" (${bookRecord.id})`);
-        } else {
-            console.log(`↩ Book already exists: "${book.title}" (${bookRecord.id})`);
         }
 
         for (const ch of book.chapters) {
@@ -480,6 +526,12 @@ async function main() {
             const supabase = createSupabaseClient();
             existingCheck = {
                 findBook: (url) => findBookByLegacyUrl(supabase, url),
+                findBookByWpId: (wpId) => findBookByWpId(supabase, wpId),
+                findBookConflict: async (sectionSlug, bookSlug) => {
+                    const sec = await findSectionBySlug(supabase, sectionSlug.toLowerCase());
+                    if (!sec) return null;
+                    return await findBookBySectionAndSlug(supabase, sec.id, bookSlug);
+                },
                 findChapter: (url) => findChapterByLegacyUrl(supabase, url),
                 findChapterByWpId: (wpId) => findChapterByWpId(supabase, wpId),
                 supabase,

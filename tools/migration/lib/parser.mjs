@@ -101,6 +101,9 @@ function normalizeTrailingSlash(url) {
     }
 }
 
+// Exported alias used by migrate.mjs to normalize book URLs before DB lookup.
+export { normalizeTrailingSlash as normalizeUrl };
+
 /**
  * Parse a WordPress chapter page.
  * Preserves rawHtml (before cleaning) and cleanedHtml (after cleaning) separately.

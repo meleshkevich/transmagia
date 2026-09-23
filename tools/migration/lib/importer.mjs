@@ -23,8 +23,29 @@ export async function findSectionBySlug(supabase, slug) {
 export async function findBookByLegacyUrl(supabase, legacyUrl) {
     const { data, error } = await supabase
         .from("books")
-        .select("id, title, slug, legacy_url")
+        .select("id, title, slug, legacy_url, legacy_wp_id, section_id")
         .eq("legacy_url", legacyUrl)
+        .maybeSingle();
+    if (error) throw error;
+    return data ?? null;
+}
+
+export async function findBookByWpId(supabase, legacyWpId) {
+    const { data, error } = await supabase
+        .from("books")
+        .select("id, title, slug, legacy_url, legacy_wp_id, section_id")
+        .eq("legacy_wp_id", legacyWpId)
+        .maybeSingle();
+    if (error) throw error;
+    return data ?? null;
+}
+
+export async function findBookBySectionAndSlug(supabase, sectionId, slug) {
+    const { data, error } = await supabase
+        .from("books")
+        .select("id, title, slug, legacy_url, legacy_wp_id, section_id")
+        .eq("section_id", sectionId)
+        .eq("slug", slug)
         .maybeSingle();
     if (error) throw error;
     return data ?? null;
@@ -50,10 +71,17 @@ export async function findChapterByWpId(supabase, legacyWpId) {
     return data ?? null;
 }
 
-export async function insertBook(supabase, { sectionId, title, slug, legacyUrl }) {
+export async function insertBook(supabase, { sectionId, title, slug, legacyUrl, legacyWpId }) {
     const { data, error } = await supabase
         .from("books")
-        .insert({ section_id: sectionId, title, slug, status: "draft", legacy_url: legacyUrl })
+        .insert({
+            section_id: sectionId,
+            title,
+            slug,
+            status: "draft",
+            legacy_url: legacyUrl,
+            legacy_wp_id: legacyWpId ?? null,
+        })
         .select("id, title, slug")
         .single();
     if (error) throw error;
