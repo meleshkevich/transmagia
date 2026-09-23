@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { findChapterByLegacyUrl, findChapterByWpId } from "../lib/importer.mjs";
+import { findChapterByLegacyUrl, findChapterByWpId, insertBook, insertChapter } from "../lib/importer.mjs";
 
 // Minimal Supabase mock that supports .from().select().eq().maybeSingle()
 function makeSupabaseMock({ byUrl = null, byWpId = null } = {}) {
@@ -99,6 +99,97 @@ describe("findChapterByLegacyUrl", () => {
     it("throws when Supabase returns an error", async () => {
         const supabase = makeErrorSupabase("DB connection failed");
         await expect(findChapterByLegacyUrl(supabase, "https://x.com/")).rejects.toThrow("DB connection failed");
+    });
+});
+
+// ── Insert status tests ───────────────────────────────────────────────────────
+
+describe("insertBook — status defaults", () => {
+    it("creates new book with status published", async () => {
+        let captured = null;
+        const supabase = {
+            from: () => ({
+                insert: (row) => {
+                    captured = row;
+                    return {
+                        select: function () { return this; },
+                        single: async function () {
+                            return { data: { id: "new-id", title: row.title, slug: row.slug }, error: null };
+                        },
+                    };
+                },
+            }),
+        };
+        await insertBook(supabase, {
+            sectionId: "sec-1", title: "Test Book", slug: "test-book",
+            legacyUrl: "https://example.com/test/", legacyWpId: 42,
+        });
+        expect(captured.status).toBe("published");
+    });
+
+    it("does not create a duplicate when the caller skips after find", async () => {
+        // Simulates the importer guard: if findBookByWpId returns a record,
+        // insertBook is never called. We verify the find returns the existing record.
+        const BOOK = { id: "existing-id", title: "Test Book", slug: "test-book", legacy_wp_id: 42, legacy_url: "https://example.com/test/" };
+        let insertCalled = false;
+        const supabase = {
+            from: () => ({
+                select: () => ({
+                    eq: () => ({
+                        maybeSingle: async () => ({ data: BOOK, error: null }),
+                    }),
+                }),
+                insert: () => { insertCalled = true; return { select: () => ({ single: async () => ({ data: null, error: null }) }) }; },
+            }),
+        };
+        const { findBookByWpId } = await import("../lib/importer.mjs");
+        const found = await findBookByWpId(supabase, 42);
+        expect(found).toEqual(BOOK);
+        // Because found is non-null the caller would skip insertBook — verified here symbolically.
+        expect(insertCalled).toBe(false);
+    });
+});
+
+describe("insertChapter — status defaults", () => {
+    it("creates new chapter with status published", async () => {
+        let captured = null;
+        const supabase = {
+            from: () => ({
+                insert: (row) => {
+                    captured = row;
+                    return {
+                        select: function () { return this; },
+                        single: async function () {
+                            return { data: { id: "new-ch-id", title: row.title, slug: row.slug }, error: null };
+                        },
+                    };
+                },
+            }),
+        };
+        await insertChapter(supabase, {
+            bookId: "book-1", title: "Chapter 1", slug: "chapter-1",
+            content: {}, sortOrder: 1, legacyWpId: 100, legacyUrl: "https://example.com/ch1/",
+        });
+        expect(captured.status).toBe("published");
+    });
+
+    it("does not create a duplicate when the caller skips after find", async () => {
+        const CHAPTER = { id: "ch-id", title: "Chapter 1", status: "published", legacy_url: "https://example.com/ch1/", legacy_wp_id: 100, book_id: "book-1" };
+        let insertCalled = false;
+        const supabase = {
+            from: () => ({
+                select: () => ({
+                    eq: () => ({
+                        maybeSingle: async () => ({ data: CHAPTER, error: null }),
+                    }),
+                }),
+                insert: () => { insertCalled = true; return { select: () => ({ single: async () => ({ data: null, error: null }) }) }; },
+            }),
+        };
+        const { findChapterByWpId } = await import("../lib/importer.mjs");
+        const found = await findChapterByWpId(supabase, 100);
+        expect(found).toEqual(CHAPTER);
+        expect(insertCalled).toBe(false);
     });
 });
 

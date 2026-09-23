@@ -13,7 +13,7 @@ type EditorValue = Record<string, unknown>;
 type TiptapEditorProps = {
     initialContent: EditorValue;
     onChange: (content: EditorValue) => void;
-    onUploadImage: (file: File) => Promise<string | null>;
+    onUploadImage?: (file: File) => Promise<string | null>;
 };
 
 function ToolbarButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
@@ -44,7 +44,7 @@ export function TiptapEditor({ initialContent, onChange, onUploadImage }: Tiptap
     async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
         event.target.value = "";
-        if (!file) return;
+        if (!file || !onUploadImage) return;
         const path = await onUploadImage(file);
         if (path) {
             editor?.chain().focus().setImage({ src: `/api/content-images/${path}` }).run();
@@ -66,11 +66,13 @@ export function TiptapEditor({ initialContent, onChange, onUploadImage }: Tiptap
                     const href = window.prompt("Введите ссылку");
                     if (href) editor.chain().focus().setLink({ href }).run();
                 }}><Link2 /></ToolbarButton>
-                <label className="admin-editor-button" title="Добавить изображение">
-                    <ImagePlus />
-                    <span className="sr-only">Добавить изображение</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} hidden />
-                </label>
+                {onUploadImage && (
+                    <label className="admin-editor-button" title="Добавить изображение">
+                        <ImagePlus />
+                        <span className="sr-only">Добавить изображение</span>
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} hidden />
+                    </label>
+                )}
             </div>
             <EditorContent editor={editor} />
         </div>

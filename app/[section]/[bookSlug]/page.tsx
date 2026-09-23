@@ -3,16 +3,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ReaderHeader } from "@/components/reader/reader-header";
+import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { getPublishedBook, getPublishedChapters } from "@/lib/reader/data";
+import { extractTiptapText } from "@/lib/tiptap-text";
 import { decodeParam } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string; bookSlug: string }> }): Promise<Metadata> {
     const { section, bookSlug } = await params;
     const result = await getPublishedBook(decodeParam(section), decodeParam(bookSlug));
     if (!result) return {};
+    const plainDescription = result.book.description ? extractTiptapText(result.book.description) : null;
     return {
         title: result.book.title,
-        description: result.book.description ?? `Книга «${result.book.title}» на Трансмагии.`,
+        description: plainDescription || `Книга «${result.book.title}» на Трансмагии.`,
     };
 }
 
@@ -38,7 +41,7 @@ export default async function BookPage({ params }: { params: Promise<{ section: 
                         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Книга</p>
                         <h1 className="font-reader text-4xl tracking-tight sm:text-5xl">{result.book.title}</h1>
                         {result.book.author && <p className="mt-3 text-lg text-muted-foreground">{result.book.author}</p>}
-                        {result.book.description && <p className="mt-6 max-w-2xl leading-8 text-muted-foreground">{result.book.description}</p>}
+                        {result.book.description && <div className="mt-6 max-w-2xl leading-8 text-muted-foreground"><TiptapRenderer content={result.book.description} /></div>}
                         {result.section.isProtected && <p className="mt-6 text-sm font-semibold text-amber-800">Раздел доступен после проверки пароля или входа.</p>}
                     </div>
                 </section>

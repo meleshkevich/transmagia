@@ -145,7 +145,7 @@ if (!apply) {
 
 console.log(`\nApplying updates...`);
 
-for (const { spec, ch, skip } of plan) {
+for (const { spec, skip } of plan) {
     if (skip) {
         console.log(`  ↩ sort_order=${spec.expectedSortOrder}: already correct, skipped.`);
         continue;

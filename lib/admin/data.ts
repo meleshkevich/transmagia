@@ -17,7 +17,7 @@ export type AdminBook = {
     title: string;
     slug: string;
     author: string | null;
-    description: string | null;
+    description: Record<string, unknown> | null;
     coverImagePath: string | null;
     coverImageUrl: string | null;
     status: "draft" | "published";
@@ -59,7 +59,7 @@ function mapBook(book: {
     title: string;
     slug: string;
     author: string | null;
-    description: string | null;
+    description: Record<string, unknown> | null;
     cover_image_path: string | null;
     status: "draft" | "published";
     updated_at: string;

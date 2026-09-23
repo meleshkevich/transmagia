@@ -48,7 +48,7 @@ export async function createBook(formData: FormData): Promise<MutationState> {
         const title = requiredText(formData.get("title"), "Введите название книги.");
         const sectionId = requiredText(formData.get("sectionId"), "Выберите раздел.");
         const author = optionalText(formData.get("author"));
-        const description = optionalText(formData.get("description"));
+        const description = parseOptionalDescription(formData.get("description"));
         const status = parseStatus(formData.get("status"), formData.get("publish"));
         const cover = validateImage(formData.get("cover"), MAX_COVER_BYTES);
         const supabase = createSupabaseAdminClient();
@@ -78,7 +78,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<Mu
         const title = requiredText(formData.get("title"), "Введите название книги.");
         const sectionId = requiredText(formData.get("sectionId"), "Выберите раздел.");
         const author = optionalText(formData.get("author"));
-        const description = optionalText(formData.get("description"));
+        const description = parseOptionalDescription(formData.get("description"));
         const status = parseStatus(formData.get("status"), formData.get("publish"));
         const cover = validateImage(formData.get("cover"), MAX_COVER_BYTES);
         const supabase = createSupabaseAdminClient();
@@ -202,4 +202,23 @@ function parseContent(value: FormDataEntryValue | null): Record<string, unknown>
     } catch {
         throw new Error("Содержимое главы имеет неверный формат.");
     }
+}
+
+function parseOptionalDescription(value: FormDataEntryValue | null): Record<string, unknown> | null {
+    if (typeof value !== "string" || !value.trim()) return null;
+    let parsed: Record<string, unknown>;
+    try {
+        parsed = JSON.parse(value) as Record<string, unknown>;
+    } catch {
+        return null;
+    }
+    if (parsed.type !== "doc" || !Array.isArray(parsed.content)) return null;
+    // Treat a document containing only an empty paragraph as absent
+    const content = parsed.content as Array<{ type: string; content?: unknown[] }>;
+    if (content.length === 0) return null;
+    if (content.length === 1 && content[0].type === "paragraph") {
+        const inner = content[0].content;
+        if (!inner || inner.length === 0) return null;
+    }
+    return parsed;
 }

@@ -22,7 +22,7 @@ export type ReaderBook = {
     title: string;
     slug: string;
     author: string | null;
-    description: string | null;
+    description: Record<string, unknown> | null;
     coverImageUrl: string | null;
 };
 
@@ -80,7 +80,7 @@ function mapBook(book: {
     title: string;
     slug: string;
     author: string | null;
-    description: string | null;
+    description: Record<string, unknown> | null;
     cover_image_path: string | null;
 }, section: SectionRow): ReaderBook {
     return {

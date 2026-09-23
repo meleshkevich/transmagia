@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useActionState } from "react";
 
+import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import type { AdminSection } from "@/lib/admin/data";
 import type { CmsActionState } from "@/app/actions/cms";
+
+const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 
 type BookFormProps = {
     sections: AdminSection[];
@@ -13,7 +17,7 @@ type BookFormProps = {
     book?: {
         title: string;
         author: string | null;
-        description: string | null;
+        description: Record<string, unknown> | null;
         sectionId: string;
         status: "draft" | "published";
     };
@@ -21,12 +25,16 @@ type BookFormProps = {
 
 export function BookForm({ sections, action, submitLabel, book }: BookFormProps) {
     const [state, formAction, pending] = useActionState(action, undefined);
+    const [description, setDescription] = useState<Record<string, unknown>>(book?.description ?? EMPTY_DOC);
+
     return (
         <form action={formAction} encType="multipart/form-data" className="admin-form">
             {state?.message && <p className="admin-error" role="alert">{state.message}</p>}
             <label>Название<input name="title" required defaultValue={book?.title ?? ""} /></label>
             <label>Автор<input name="author" defaultValue={book?.author ?? ""} /></label>
-            <label>Описание<textarea name="description" rows={5} defaultValue={book?.description ?? ""} /></label>
+            <input type="hidden" name="description" value={JSON.stringify(description)} readOnly />
+            <div className="admin-editor-label">Описание</div>
+            <TiptapEditor initialContent={book?.description ?? EMPTY_DOC} onChange={setDescription} />
             <label>Раздел<select name="sectionId" required defaultValue={book?.sectionId ?? sections[0]?.id ?? ""}>{sections.map((section) => <option key={section.id} value={section.id}>{section.name}</option>)}</select></label>
             <label>Обложка<input name="cover" type="file" accept="image/jpeg,image/png,image/webp" /></label>
             <label>Статус<select name="status" defaultValue={book?.status ?? "draft"}><option value="draft">Черновик</option><option value="published">Опубликована</option></select></label>

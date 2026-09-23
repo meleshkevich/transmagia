@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import type { ReaderBook } from "@/lib/reader/data";
+import { BOOK_CARD_DESCRIPTION_LIMIT } from "@/lib/reader/config";
+import { extractTiptapText, truncateDescription } from "@/lib/tiptap-text";
 
 export function BookCard({ book }: { book: ReaderBook }) {
+    const descriptionPreview = book.description
+        ? truncateDescription(extractTiptapText(book.description), BOOK_CARD_DESCRIPTION_LIMIT)
+        : null;
+
     return (
         <article className="book-card">
             {book.coverImageUrl ? (
@@ -13,7 +19,7 @@ export function BookCard({ book }: { book: ReaderBook }) {
             <div className="book-card-body">
                 <h2><Link href={`/${book.sectionSlug}/${book.slug}`}>{book.title}</Link></h2>
                 {book.author && <p className="book-author">{book.author}</p>}
-                {book.description && <p className="book-description">{book.description}</p>}
+                {descriptionPreview && <p className="book-description">{descriptionPreview}</p>}
                 <Link className="reader-link" href={`/${book.sectionSlug}/${book.slug}`}>Открыть книгу</Link>
             </div>
         </article>

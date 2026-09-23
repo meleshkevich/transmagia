@@ -78,7 +78,7 @@ export async function insertBook(supabase, { sectionId, title, slug, legacyUrl, 
             section_id: sectionId,
             title,
             slug,
-            status: "draft",
+            status: "published",
             legacy_url: legacyUrl,
             legacy_wp_id: legacyWpId ?? null,
         })
@@ -97,7 +97,7 @@ export async function insertChapter(supabase, { bookId, title, slug, content, so
             slug,
             content,
             sort_order: sortOrder,
-            status: "draft",
+            status: "published",
             legacy_wp_id: legacyWpId ?? null,
             legacy_url: legacyUrl,
         })
