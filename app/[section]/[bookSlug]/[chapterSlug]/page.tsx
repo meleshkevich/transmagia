@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ChapterNavigation } from "@/components/reader/chapter-navigation";
@@ -6,6 +7,7 @@ import { ReaderHeader } from "@/components/reader/reader-header";
 import { ReaderSurface } from "@/components/reader/reader-surface";
 import { SectionGate } from "@/components/reader/section-gate";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
+import { CommentsSection } from "@/components/comments/comments-section";
 import { getChapterPageData, getPublishedChapterMetadata } from "@/lib/reader/data";
 import { decodeParam } from "@/lib/utils";
 
@@ -40,18 +42,23 @@ export default async function ChapterPage({ params }: { params: Promise<{ sectio
         );
     }
 
+    const bookHref = `/${sectionSlug}/${bookSlug}`;
+
     return (
         <ReaderSurface>
             <ReaderHeader sectionName={result.section.name} bookTitle={result.book.title} />
             <main>
-                <header className="mx-auto max-w-4xl px-5 pb-4 pt-10 lg:px-8 lg:pt-16">
-                    <p className="text-sm text-muted-foreground">{result.book.title}</p>
+                <div className="mx-auto max-w-4xl px-5 pt-6 lg:px-8 lg:pt-10">
+                    <Link href={bookHref} className="chapter-toc-link">← К оглавлению</Link>
+                </div>
+                <header className="mx-auto max-w-4xl px-5 pb-4 pt-5 lg:px-8">
+                    <Link href={bookHref} className="chapter-toc-link">
+                        {result.book.title}
+                    </Link>
                     <h1 className="mt-3 font-reader text-4xl tracking-tight sm:text-5xl">{result.chapter.title}</h1>
                 </header>
                 <TiptapRenderer content={result.content ?? { type: "doc", content: [] }} />
-                <section aria-label="Комментарии" className="mx-auto max-w-4xl border-t border-border/70 px-5 py-8 text-sm text-muted-foreground lg:px-8">
-                    Комментарии появятся в следующей фазе.
-                </section>
+                <CommentsSection chapterId={result.chapter.id} />
                 <ChapterNavigation sectionSlug={sectionSlug} bookSlug={bookSlug} chapters={result.chapters} currentChapterId={result.chapter.id} />
             </main>
         </ReaderSurface>

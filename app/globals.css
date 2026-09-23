@@ -138,6 +138,13 @@
   .reader-surface {
     --reader-background: oklch(0.975 0.012 90);
     --reader-foreground: oklch(0.22 0.025 165);
+    --reader-muted-foreground: oklch(0.47 0.035 165);
+    --reader-input-bg: oklch(0.99 0.008 90);
+    --reader-input-border: color-mix(in oklab, var(--reader-foreground) 18%, transparent);
+    --reader-input-ring: oklch(0.55 0.08 165);
+    --reader-separator: color-mix(in oklab, var(--reader-foreground) 12%, transparent);
+    --reader-primary-bg: oklch(0.29 0.07 165);
+    --reader-primary-fg: oklch(0.98 0.01 90);
     background: var(--reader-background);
     color: var(--reader-foreground);
     min-height: 100vh;
@@ -146,6 +153,12 @@
   .reader-surface[data-theme="dark"] {
     --reader-background: oklch(0.19 0.018 165);
     --reader-foreground: oklch(0.92 0.018 90);
+    --reader-muted-foreground: oklch(0.65 0.025 165);
+    --reader-input-bg: oklch(0.255 0.018 165);
+    --reader-input-border: oklch(0.36 0.022 165);
+    --reader-input-ring: oklch(0.55 0.06 165);
+    --reader-primary-bg: oklch(0.55 0.07 165);
+    --reader-primary-fg: oklch(0.12 0.015 165);
   }
 
   .reader-toolbar {
@@ -495,6 +508,12 @@
     text-underline-offset: 0.2em;
   }
 
+  .admin-table-title:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   .admin-table-subtitle {
     color: var(--muted-foreground);
     display: block;
@@ -750,12 +769,6 @@
     opacity: 0.35;
   }
 
-  .admin-chapter-edit-links {
-    display: grid;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
   @media (max-width: 900px) {
     .admin-book-layout {
       grid-template-columns: 1fr;
@@ -790,5 +803,223 @@
     .admin-form-grid {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* ── Comments section (reader) ── */
+
+  .comments-section {
+    border-top: 1px solid var(--reader-separator);
+    font-size: 0.9rem;
+  }
+
+  .comments-heading {
+    font-family: var(--font-reader), Georgia, serif;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .comment-list {
+    display: grid;
+    gap: 1.25rem;
+    list-style: none;
+    margin-bottom: 2rem;
+    padding: 0;
+  }
+
+  .comment-item {
+    border-top: 1px solid var(--reader-separator);
+    padding-top: 1.25rem;
+  }
+
+  .comment-list .comment-item:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .comment-meta {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .comment-author {
+    font-weight: 700;
+  }
+
+  .comment-date {
+    color: var(--reader-muted-foreground);
+    font-size: 0.8rem;
+  }
+
+  .comment-body {
+    color: var(--reader-foreground);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .comment-empty {
+    color: var(--reader-muted-foreground);
+    margin-bottom: 2rem;
+  }
+
+  .comment-login-prompt {
+    color: var(--reader-muted-foreground);
+    margin-top: 1rem;
+  }
+
+  .comment-login-link {
+    color: var(--reader-foreground);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .comment-form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .comment-form-label {
+    display: grid;
+    font-weight: 700;
+    gap: 0.4rem;
+  }
+
+  .comment-form-textarea {
+    background: var(--reader-input-bg);
+    border: 1px solid var(--reader-input-border);
+    color: var(--reader-foreground);
+    font: inherit;
+    line-height: 1.5;
+    padding: 0.65rem 0.75rem;
+    resize: vertical;
+    width: 100%;
+  }
+
+  .comment-form-textarea::placeholder {
+    color: var(--reader-muted-foreground);
+    opacity: 1;
+  }
+
+  .comment-form-textarea:focus-visible {
+    outline: 2px solid var(--reader-input-ring);
+    outline-offset: 2px;
+  }
+
+  .comment-form-error {
+    background: #fff0ef;
+    border: 1px solid #f0b8b2;
+    color: #8d2820;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .comment-form-success {
+    color: #155b47;
+    font-size: 0.85rem;
+  }
+
+  .comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .comment-submit {
+    background: var(--reader-primary-bg);
+    color: var(--reader-primary-fg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.25rem;
+  }
+
+  .comment-submit:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .comment-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .comment-delete-button {
+    color: var(--reader-muted-foreground);
+    font-size: 0.75rem;
+    margin-left: auto;
+    padding: 0 0.25rem;
+  }
+
+  .comment-delete-button:hover:not(:disabled) {
+    color: var(--reader-foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .comment-delete-button:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--reader-input-ring);
+    outline-offset: 2px;
+  }
+
+  .comment-delete-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  /* ── Reader chapter navigation ── */
+
+  .chapter-toc-link {
+    color: var(--reader-muted-foreground);
+    display: inline-block;
+    font-size: 0.85rem;
+  }
+
+  .chapter-toc-link:hover {
+    color: var(--reader-foreground);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .chapter-toc-link:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--reader-input-ring);
+    outline-offset: 2px;
+  }
+
+  .chapter-nav-border {
+    border-top: 1px solid var(--reader-separator);
+  }
+
+  /* Admin extra */
+
+  .admin-comment-excerpt {
+    color: var(--muted-foreground);
+    display: block;
+    font-size: 0.85rem;
+    max-width: 28rem;
+  }
+
+  .admin-table-action-danger {
+    color: var(--destructive);
+  }
+
+  .admin-table-action-danger:hover {
+    color: var(--destructive);
+  }
+
+  .admin-success {
+    background: #dcefe8;
+    color: #155b47;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-status-deleted {
+    background: var(--muted);
+    color: var(--muted-foreground);
   }
 }

@@ -19,14 +19,27 @@ export function ChapterNavigation({
     const bookHref = `/${sectionSlug}/${bookSlug}`;
 
     return (
-        <nav className="mx-auto flex max-w-4xl flex-col gap-3 border-t border-border/70 px-5 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8" aria-label="Навигация по главам">
+        <nav
+            className="chapter-nav-border mx-auto flex max-w-4xl flex-col gap-3 px-5 py-8 sm:flex-row sm:items-center sm:justify-between lg:px-8"
+            aria-label="Навигация по главам"
+        >
             {previous ? (
-                <Link className="reader-link" href={`/${sectionSlug}/${bookSlug}/${previous.slug}`}>← {previous.title}</Link>
-            ) : <span className="text-sm text-muted-foreground">Начало книги</span>}
-            <Link className="reader-link text-center" href={bookHref}>К книге</Link>
+                <Link className="reader-link" href={`/${sectionSlug}/${bookSlug}/${previous.slug}`}>
+                    ← Предыдущая глава
+                </Link>
+            ) : (
+                <span className="text-sm text-muted-foreground">Начало книги</span>
+            )}
+            <Link className="reader-link text-center" href={bookHref}>
+                К оглавлению
+            </Link>
             {next ? (
-                <Link className="reader-link text-right" href={`/${sectionSlug}/${bookSlug}/${next.slug}`}>{next.title} →</Link>
-            ) : <span className="text-right text-sm text-muted-foreground">Конец книги</span>}
+                <Link className="reader-link text-right" href={`/${sectionSlug}/${bookSlug}/${next.slug}`}>
+                    Следующая глава →
+                </Link>
+            ) : (
+                <span className="text-right text-sm text-muted-foreground">Конец книги</span>
+            )}
         </nav>
     );
 }

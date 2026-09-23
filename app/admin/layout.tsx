@@ -20,8 +20,8 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
                 <aside className="admin-sidebar">
                     <nav aria-label="Навигация админки">
                         <Link href="/admin/books">Книги</Link>
-                        <span>Комментарии</span>
-                        <span>Пользователи</span>
+                        <Link href="/admin/comments">Комментарии</Link>
+                        <Link href="/admin/users">Пользователи</Link>
                         <span>Разделы</span>
                     </nav>
                 </aside>

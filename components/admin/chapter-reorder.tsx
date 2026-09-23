@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import { reorderChaptersAction } from "@/app/actions/reorder";
 import type { AdminChapter } from "@/lib/admin/data";
@@ -30,7 +31,7 @@ export function ChapterReorder({ bookId, chapters }: { bookId: string; chapters:
             <ol className="admin-chapter-list">
                 {items.map((chapter, index) => <li key={chapter.id}>
                     <span className="admin-chapter-order">{String(index + 1).padStart(2, "0")}</span>
-                    <div><span className="admin-table-title">{chapter.title}</span><span className={`admin-status admin-status-${chapter.status}`}>{chapter.status === "published" ? "Опубликована" : "Черновик"}</span></div>
+                    <div><Link href={`/admin/books/${bookId}/chapters/${chapter.id}/edit`} className="admin-table-title">{chapter.title}</Link><span className={`admin-status admin-status-${chapter.status}`}>{chapter.status === "published" ? "Опубликована" : "Черновик"}</span></div>
                     <div className="admin-reorder-actions"><button type="button" aria-label={`Переместить «${chapter.title}» вверх`} disabled={index === 0 || pending} onClick={() => move(index, -1)}>↑</button><button type="button" aria-label={`Переместить «${chapter.title}» вниз`} disabled={index === items.length - 1 || pending} onClick={() => move(index, 1)}>↓</button></div>
                 </li>)}
             </ol>

@@ -12,180 +12,215 @@ The current WordPress site has an important structural characteristic:
 
 Therefore, the relationship must be derived from the links present on each book Page.
 
-## 2. Manual Input
+## 2. Manual Input — `books.csv`
 
-For reliability, the administrator should manually prepare the authoritative list of book URLs.
-
-Recommended input columns:
+The administrator prepares an authoritative UTF-8 CSV file:
 
 ```text
 title,url,section
 ```
 
-Example:
+Example (`tools/migration/books.csv`):
 
 ```csv
-Book A,https://transmagia.house/...,Originals
-Book B,https://transmagia.house/...,Fanfiction
-Book C,https://transmagia.house/...,Translations
+title,url,section
+Шум дождя,https://transmagia.house/шум-дождя/,originals
 ```
 
-This is intentionally a small manual step. The subsequent content extraction should be automated.
+Columns:
 
-## 3. Automated Process
+| Column | Description |
+|---|---|
+| `title` | Book title used for slug generation — authoritative |
+| `url` | WordPress book page URL (`legacy_url`) |
+| `section` | Target Transmagia section slug (must already exist in DB) |
 
-For each manually supplied book URL:
+**Do not auto-discover books.** This is an intentionally small manual step.
 
-1. fetch the WordPress book Page;
-2. parse the Page content;
-3. extract chapter links in document order;
-4. resolve each chapter link to the corresponding WordPress Post;
-5. retrieve chapter title and content;
-6. normalize/clean WordPress HTML;
-7. convert the content to the new Tiptap-compatible representation;
-8. migrate referenced media where applicable;
-9. assign the manually supplied section;
-10. create book and chapter records in the intermediate migration output.
+## 3. Slug Generation
 
-The importer must not infer a chapter's parent book from the chapter URL.
+All new Transmagia slugs are generated from titles using `slugify()` from `lib/slug.ts` (mirrored as `tools/migration/lib/slug.mjs`).
 
-## 4. Chapter Ordering
-
-The chapter link order on the WordPress book Page is the default source for `chapters.sort_order`.
-
-Example:
+**Rule:** `slugify(title)` → stable ASCII slug via Cyrillic transliteration.
 
 ```text
-/prologue/
-/chapter-1/
-/chapter-2/
+title:       Шум дождя
+new slug:    shum-dozhdya
+
+title:       1. Жизнь — худшая из проявлений реальности
+new slug:    1-zhizn-khudshaya-iz-proyavleniy-realnosti
 ```
 
-becomes:
+**Never** derive a Transmagia slug from a WordPress URL. The WordPress URL is preserved only as `legacy_url`.
 
-```text
-Prologue    order 1
-Chapter 1   order 2
-Chapter 2   order 3
+**Collision strategy:** suffix `-2`, `-3`, … appended until free within the same scope (books: `(section_id, slug)`, chapters: `(book_id, slug)`).
+
+## 4. Legacy Traceability
+
+Every imported record stores:
+
+| Field | Description |
+|---|---|
+| `legacy_url` | Original WordPress URL — used for duplicate detection and redirect mapping |
+| `legacy_wp_id` | WordPress numeric post ID (extracted from `postid-NNN` body class) |
+
+These fields allow source tracing and prevent re-import of already-migrated content.
+
+## 5. Tool Structure
+
+```
+tools/
+  migration-test/
+    import-wordpress-chapter.mjs   original one-off test (preserved)
+    README.md
+  migration/
+    migrate.mjs                    CLI entry point
+    books.csv                      input file (edit before running)
+    lib/
+      parser.mjs                   HTML fetching, WordPress cleaning, Tiptap conversion
+      slug.mjs                     slugify mirror of lib/slug.ts
+      importer.mjs                 Supabase client + DB/storage operations
+    tests/
+      fixtures.mjs                 HTML test fixtures (no live network access)
+      parser.test.mjs              parser unit tests
+      slug.test.mjs                slug unit tests
 ```
 
-## 5. Intermediate Representation
+## 6. Commands
 
-Do not import directly from scraped HTML into production tables without validation.
+### Dry-run
 
-Preferred pipeline:
-
-```text
-WordPress
-  ↓
-raw source data
-  ↓
-parser
-  ↓
-normalized migration data
-  ↓
-validation/report
-  ↓
-Supabase import
+```bash
+npm run migration:wp -- --dry-run tools/migration/books.csv
 ```
 
-Conceptual JSON:
+Dry-run:
+- fetches WordPress pages;
+- extracts chapter links from book pages;
+- fetches and parses every chapter page;
+- generates normalized migration data;
+- checks for existing imported records (`legacy_url` match);
+- prints a human-readable report.
+
+Dry-run **does NOT**:
+- insert books or chapters;
+- update existing records;
+- upload images;
+- modify Supabase Storage.
+
+### Real import (architecture prepared — not yet active for mass import)
+
+```bash
+npm run migration:wp -- --import tools/migration/books.csv
+```
+
+Real import requires `--import` to be explicit. It will abort if cross-book validation errors exist.
+
+## 7. Automated Process
+
+For each book in the CSV:
+
+1. Fetch the WordPress book page;
+2. Extract chapter links from the content area (`.post-content` / `.entry-content` inside `article`);
+3. Deduplicate chapter links, preserve document order for `sort_order`;
+4. For each chapter link: fetch the chapter page, extract `article > .post-content`;
+5. Capture `rawHtml` (before cleaning) and `cleanedHtml` (after cleaning) separately;
+6. Remove WordPress navigation/ads/comments elements;
+7. Convert cleaned HTML to Tiptap JSON (`generateJSON` from `@tiptap/core`);
+8. Assign new slug from chapter title via `slugify()`;
+9. Check `legacy_url` against existing DB records — skip if already imported;
+10. In real import: upload images to `content-images` storage, rewrite `src` paths.
+
+## 8. HTML Cleaning Rules
+
+The cleaner (preserved from the proven Phase 5 one-off tool) removes:
+
+- `script`, `style`, `nav`, `form`
+- `.sharedaddy`, `.jp-relatedposts`, `.comments-area`, `.comment-respond`
+- `.post-navigation`, `.previous`, `.next`, `.post-categories`, `.post-meta`
+- `.wp-block-spacer`, `[class*='share']`, `[class*='social']`
+- `[class*='advert']`, `[class*='widget']`
+- Attributes: `id`, `style`, `onclick`, `class`, `data-id`, `data-block`, `aria-label`
+
+## 9. Intermediate Representation
 
 ```json
 {
-  "title": "Example Book",
-  "section": "Originals",
-  "legacyUrl": "https://transmagia.house/example-book/",
+  "title": "Шум дождя",
+  "slug": "shum-dozhdya",
+  "section": "originals",
+  "legacyUrl": "https://transmagia.house/шум-дождя/",
   "chapters": [
     {
-      "title": "Prologue",
-      "legacyUrl": "https://transmagia.house/prologue/",
-      "order": 1
+      "sortOrder": 1,
+      "title": "1. Жизнь — худшая из проявлений реальности",
+      "slug": "1-zhizn-khudshaya-iz-proyavleniy-realnosti",
+      "legacyUrl": "https://transmagia.house/1-zhizn.../",
+      "legacyWpId": 12345,
+      "rawHtml": "...",
+      "cleanedHtml": "...",
+      "content": { "type": "doc", "content": [...] },
+      "images": ["https://transmagia.house/wp-content/..."],
+      "status": "ok | warning | error | already_imported"
     }
   ]
 }
 ```
 
-## 6. Validation Report
+## 10. Validation
 
-The migration tool should produce both aggregate and per-book diagnostics.
+The tool detects and reports:
 
-Example:
+- Book page unreachable (error)
+- No chapter links found on book page (warning)
+- Chapter page unreachable (error per chapter)
+- Content container not found (error per chapter)
+- Empty chapter content — no text nodes (warning)
+- Tiptap conversion failure (error)
+- Duplicate chapter URL within a book (warning)
+- Duplicate chapter URL across books (error)
+- Duplicate `legacy_wp_id` across all chapters (warning)
+- Relative image URLs that may not resolve (warning)
+- Already-imported records detected by `legacy_url` (informational — will skip on import)
 
-```text
-Books processed: 48
-Chapters found: 1284
-Chapters successfully parsed: 1281
-Warnings: 3
-Errors: 0
-```
+## 11. Duplicate Detection
 
-Detect at least:
+The tool checks `legacy_url` against existing DB records before (and after) import:
 
-- broken chapter links;
-- duplicate chapter links;
-- a chapter linked from multiple books;
-- posts that cannot be retrieved;
-- empty chapter content;
-- unexpected HTML structures;
-- media that cannot be migrated;
-- duplicate book slugs.
+- `books.legacy_url` — book already imported
+- `chapters.legacy_url` — chapter already imported
 
-Do not perform the final import until material warnings/errors are reviewed.
+This protects the existing `Шум дождя` test chapter imported during Phase 5. It is detected as "already imported" and skipped — never overwritten.
 
-## 7. Legacy Traceability
+## 12. Image Migration
 
-Preserve:
+Content images in WordPress posts are migrated to the private `content-images` Supabase Storage bucket.
 
-- `legacy_wp_id`;
-- `legacy_url`.
+Storage path format: `{bookId}/chapters/{uuid}.{ext}`
 
-These allow source tracing and redirect mapping.
+The application serves these via the authorized `/api/content-images/[...path]` endpoint, which validates access before signing a temporary URL.
 
-## 8. Slug Generation for Imported Content
+**In dry-run:** image URLs are identified and reported but not downloaded or uploaded.
 
-Imported books and chapters receive new Transmagia slugs generated from their titles, not derived from the WordPress URL.
+**In real import:** images are uploaded, and `src` attributes in the content are rewritten to `/api/content-images/{path}`.
 
-**Rule:** pass the title through `slugify()` from `lib/slug.ts`, which transliterates Cyrillic to Latin and produces a stable ASCII slug.
+Do not make `content-images` public.
 
-Example:
+## 13. Chapter Ordering
 
-```text
-title:       Шум дождя
-new slug:    shum-dozhdya
-legacy_url:  https://transmagia.house/шум-дождя/
-```
+Chapter link order on the WordPress book page becomes `chapters.sort_order`.
 
-The `legacy_url` is stored separately for redirect mapping and source tracing. It is never parsed or decoded to generate the Transmagia slug.
+## 14. Migration Safety
 
-Duplicate protection for imported chapters uses `legacy_url` uniqueness to prevent re-importing the same WordPress post. Slug collision handling (suffix `-2`, `-3`, …) applies to the generated ASCII slug within the target book.
+Do not run a mass import until:
 
-## 9. Media Migration
+1. Dry-run completes with zero errors;
+2. Per-chapter content is visually verified for representative chapters;
+3. Image migration is verified for a sample book;
+4. Counts match WordPress source counts.
 
-Book covers and in-content images should be copied into Supabase Storage where practical.
+Keep the old WordPress site operational while validation proceeds.
 
-The importer should rewrite references in imported content to point to the new storage paths/URLs.
+## 15. WordPress Access Method
 
-## 10. Redirects
-
-After migration, map legacy WordPress URLs to their new equivalents where possible.
-
-This protects existing bookmarks and external links.
-
-## 11. Migration Safety
-
-Keep the old WordPress site operational while the new system is validated.
-
-Recommended approach:
-
-1. migrate one representative book;
-2. compare content visually and structurally;
-3. fix parser/conversion issues;
-4. run a full migration into a safe environment;
-5. validate counts and anomalies;
-6. import production data;
-7. switch the domain after verification.
-
-## 12. WordPress Access Method
-
-The migration tool may use the WordPress REST API, an export/WXR file, or another reliable read-only source available from the site. The implementation should choose the most stable source after testing the live WordPress installation.
+The migration tool uses direct HTTP fetching of public WordPress pages (no API key required). The same method used and proven in the Phase 5 one-off test.
