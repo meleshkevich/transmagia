@@ -280,6 +280,15 @@
     max-width: 100%;
   }
 
+  .book-description p {
+    margin: 0 0 0.75rem;
+  }
+
+  .book-description ul,
+  .book-description ol {
+    margin: 0 0 0.75rem 1.5rem;
+  }
+
   .book-card {
     border: 1px solid var(--border);
     background: var(--background);

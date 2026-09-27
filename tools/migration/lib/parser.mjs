@@ -233,3 +233,189 @@ export function countTiptapNodes(doc) {
     visit(doc);
     return counts;
 }
+
+// ── Book page parsing ─────────────────────────────────────────────────────────
+
+/**
+ * Find the first user-uploaded cover image in a WordPress content container.
+ * Looks for the first <img> whose src contains /wp-content/uploads/ (WordPress media).
+ * Returns { src, el } or null if not found.
+ * @param {CheerioAPI} $
+ * @param {Cheerio} container
+ * @returns {{ src: string, el: CheerioElement } | null}
+ */
+export function extractBookCover($, container) {
+    let coverEl = null;
+    let coverSrc = null;
+
+    $(container).find("img").each((_i, el) => {
+        if (coverEl) return;
+        const src = $(el).attr("src") ?? $(el).attr("data-src") ?? "";
+        if (src && src.includes("/wp-content/uploads/")) {
+            coverEl = el;
+            coverSrc = src;
+        }
+    });
+
+    if (!coverEl || !coverSrc) return null;
+    return { src: coverSrc, el: coverEl };
+}
+
+/**
+ * Determine whether an href looks like a chapter link from a book page.
+ * Reuses the same filtering rules as extractChapterLinks.
+ * @param {string} href - absolute URL to test
+ * @param {string} bookOrigin
+ * @param {string} normalizedBookUrl
+ * @returns {boolean}
+ */
+function isChapterLinkHref(href, bookOrigin, normalizedBookUrl) {
+    if (!href || href.startsWith("#")) return false;
+    if (!href.startsWith(bookOrigin)) return false;
+    if (href === normalizedBookUrl) return false;
+    if (/\/(wp-admin|wp-content|feed|tag|category|author)\//i.test(href)) return false;
+    return true;
+}
+
+/**
+ * Find the index of the first top-level child element that begins the chapter list.
+ * Handles two structures:
+ *   • Bare <a> elements at top level (one per chapter)
+ *   • <ul>/<ol> where every contained <a> is a chapter link
+ * Returns children.length if no chapter-link section is found (all content is description).
+ * @param {CheerioAPI} $
+ * @param {Cheerio} container
+ * @param {string} bookUrl
+ * @returns {number}
+ */
+function findDescriptionCutoff($, container, bookUrl) {
+    const bookOrigin = new URL(bookUrl).origin;
+    const normalizedBookUrl = normalizeTrailingSlash(bookUrl);
+    const children = $(container).children().toArray();
+
+    for (let i = 0; i < children.length; i++) {
+        const el = children[i];
+        const tag = (el.tagName ?? "").toLowerCase();
+
+        if (tag === "a") {
+            let href;
+            try { href = normalizeTrailingSlash(new URL($(el).attr("href") ?? "", bookUrl).toString()); }
+            catch { continue; }
+            if (isChapterLinkHref(href, bookOrigin, normalizedBookUrl)) return i;
+        }
+
+        if (tag === "ul" || tag === "ol") {
+            const anchors = $(el).find("a[href]");
+            if (anchors.length === 0) continue;
+            let allChapter = true;
+            anchors.each((_j, a) => {
+                if (!allChapter) return;
+                let href;
+                try { href = normalizeTrailingSlash(new URL($(a).attr("href") ?? "", bookUrl).toString()); }
+                catch { allChapter = false; return; }
+                if (!isChapterLinkHref(href, bookOrigin, normalizedBookUrl)) allChapter = false;
+            });
+            if (allChapter) return i;
+        }
+    }
+
+    return children.length;
+}
+
+/**
+ * Parse a WordPress BOOK page to extract the cover image and rich-text description.
+ *
+ * Strategy:
+ *  1. Find the content container.
+ *  2. Extract the cover <img> (first /wp-content/uploads/ image); remove it from the DOM.
+ *  3. Locate the chapter-link boundary (first bare <a> or all-link <ul>/<ol>).
+ *  4. Collect top-level children before that boundary as description HTML.
+ *  5. Clean and convert description HTML → Tiptap JSON.
+ *
+ * @param {string} html - full WordPress book page HTML
+ * @param {string} bookUrl - the book page URL (used for same-domain link detection)
+ * @returns {{
+ *   ok: boolean,
+ *   error?: string,
+ *   warnings: string[],
+ *   cover: { src: string } | null,
+ *   description: object | null,
+ *   descriptionHtml: string,
+ *   descriptionNodeCount: Record<string, number>
+ * }}
+ */
+export function parseBookPage(html, bookUrl) {
+    const $ = cheerio.load(html);
+    const container = findContentContainer($);
+
+    if (!container || !container.length) {
+        return {
+            ok: false,
+            error: "Could not locate content container (article > .post-content / .entry-content)",
+            warnings: [],
+            cover: null,
+            description: null,
+            descriptionHtml: "",
+            descriptionNodeCount: {},
+        };
+    }
+
+    const warnings = [];
+
+    // 1. Find cover BEFORE any DOM mutation
+    const coverResult = extractBookCover($, container);
+    if (!coverResult) {
+        warnings.push("No cover image found in content container");
+    }
+
+    // 2. Remove cover element (and its now-empty wrapper, if any) from the container
+    if (coverResult?.el) {
+        const $coverEl = $(coverResult.el);
+        const $parent = $coverEl.parent();
+        $coverEl.remove();
+        // If the parent was a wrapper (e.g. <p>) that is now empty, remove it too
+        if ($parent[0] !== container[0] && !$parent.children().length && !$parent.text().trim()) {
+            $parent.remove();
+        }
+    }
+
+    // 3. Find the chapter-link boundary
+    const cutoff = findDescriptionCutoff($, container, bookUrl);
+
+    // 4. Collect description children (all top-level nodes before the chapter list)
+    const children = $(container).children().toArray();
+    const descHtml = children.slice(0, cutoff).map((el) => $.html(el)).join("\n");
+
+    // 5. Clean and convert description to Tiptap
+    let description = null;
+    let descriptionNodeCount = {};
+
+    if (descHtml.trim()) {
+        const $desc = cheerio.load(`<div id="desc-root">${descHtml}</div>`);
+        const descContainer = $desc("#desc-root");
+        const cleanedDescHtml = cleanWordPressContent($desc, descContainer);
+
+        try {
+            description = generateJSON(cleanedDescHtml, [StarterKit, Image]);
+            if (description.type !== "doc" || !Array.isArray(description.content)) {
+                warnings.push("Tiptap conversion produced invalid document structure");
+                description = null;
+            } else {
+                descriptionNodeCount = countTiptapNodes(description);
+            }
+        } catch (err) {
+            warnings.push(`Description Tiptap conversion failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    } else {
+        warnings.push("No description content found before chapter links");
+    }
+
+    return {
+        ok: true,
+        warnings,
+        cover: coverResult ? { src: coverResult.src } : null,
+        description,
+        descriptionHtml: descHtml,
+        descriptionNodeCount,
+    };
+}

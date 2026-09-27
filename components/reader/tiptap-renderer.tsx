@@ -82,7 +82,7 @@ function renderNode(node: TiptapNode, key: string): ReactNode {
     }
 }
 
-export function TiptapRenderer({ content }: { content: Record<string, unknown> }) {
+export function TiptapRenderer({ content, className = "reader-content" }: { content: Record<string, unknown>; className?: string }) {
     const document = content as TiptapDocument;
-    return <div className="reader-content">{renderNodes(document.content)}</div>;
+    return <div className={className}>{renderNodes(document.content)}</div>;
 }

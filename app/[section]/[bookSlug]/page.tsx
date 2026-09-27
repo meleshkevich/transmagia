@@ -41,17 +41,17 @@ export default async function BookPage({ params }: { params: Promise<{ section: 
                         <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Книга</p>
                         <h1 className="font-reader text-4xl tracking-tight sm:text-5xl">{result.book.title}</h1>
                         {result.book.author && <p className="mt-3 text-lg text-muted-foreground">{result.book.author}</p>}
-                        {result.book.description && <div className="mt-6 max-w-2xl leading-8 text-muted-foreground"><TiptapRenderer content={result.book.description} /></div>}
+                        {result.book.description && <div className="mt-6 max-w-2xl text-sm leading-7 text-muted-foreground"><TiptapRenderer content={result.book.description} className="book-description" /></div>}
                         {result.section.isProtected && <p className="mt-6 text-sm font-semibold text-amber-800">Раздел доступен после проверки пароля или входа.</p>}
                     </div>
                 </section>
                 <section className="mt-14">
                     <h2 className="font-reader text-3xl tracking-tight">Главы</h2>
                     {chapters.length > 0 ? (
-                        <ol className="mt-5 divide-y divide-border border-y border-border">
+                        <ol className="mt-5 divide-y divide-border border-y border-border ps-0">
                             {chapters.map((chapter) => (
-                                <li key={chapter.id}>
-                                    <Link className="flex items-center justify-between gap-4 py-4 hover:bg-background/70" href={`/${sectionSlug}/${bookSlug}/${chapter.slug}`}>
+                                <li key={chapter.id} className="block">
+                                    <Link className="flex w-full items-center justify-between gap-4 py-4 hover:bg-background/70 hover:underline" href={`/${result.section.slug}/${result.book.slug}/${chapter.slug}`}>
                                         <span><span className="mr-3 text-sm text-muted-foreground">{chapter.sortOrder}.</span>{chapter.title}</span>
                                         <span className="text-sm text-muted-foreground">Читать →</span>
                                     </Link>

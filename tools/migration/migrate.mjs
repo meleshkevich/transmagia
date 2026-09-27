@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { fetchWordPressPage, extractChapterLinks, parseChapterHtml, normalizeUrl } from "./lib/parser.mjs";
+import { fetchWordPressPage, extractChapterLinks, parseChapterHtml, parseBookPage, normalizeUrl } from "./lib/parser.mjs";
 import { slugify, findUniqueSuffix } from "./lib/slug.mjs";
 import {
     createSupabaseClient,
@@ -21,11 +21,16 @@ import {
     findBookByLegacyUrl,
     findBookByWpId,
     findBookBySectionAndSlug,
+    findBookByTitleInSection,
     findChapterByLegacyUrl,
     findChapterByWpId,
     insertBook,
     insertChapter,
     uploadChapterImage,
+    uploadCoverImage,
+    getBookDetails,
+    updateBookDescription,
+    updateBookCoverPath,
 } from "./lib/importer.mjs";
 
 // ── CLI argument parsing ─────────────────────────────────────────────────────
@@ -113,6 +118,11 @@ async function processBook(csvRow, existingCheck) {
         errors: [],
         bookPageOk: false,
         alreadyImported: null,
+        // Book-level parsed content (description + cover)
+        description: null,
+        cover: null,
+        descriptionNodeCount: {},
+        bookParseWarnings: [],
     };
 
     // Fetch book page first — WP page ID (needed for identity check) is only in the HTML.
@@ -159,8 +169,29 @@ async function processBook(csvRow, existingCheck) {
                     `(id: ${conflict.id}) but has no matching legacy identity (legacy_url/legacy_wp_id are null). ` +
                     `Attach the legacy identity fields to this book first, then retry.`
                 );
+            } else if (existingCheck.findBookByTitle) {
+                // Tier 4: same title in same section with no legacy identity → naked fixture conflict
+                const titleMatch = await existingCheck.findBookByTitle(csvRow.section, csvRow.title);
+                if (titleMatch && !titleMatch.legacy_wp_id && !titleMatch.legacy_url) {
+                    result.errors.push(
+                        `Book title conflict: "${csvRow.title}" in section "${csvRow.section}" ` +
+                        `(id: ${titleMatch.id}, slug: "${titleMatch.slug}") has no legacy identity. ` +
+                        `Delete or adopt this record before importing.`
+                    );
+                }
             }
         }
+    }
+
+    // Parse book page for description and cover
+    const bookPageParsed = parseBookPage(bookHtml, csvRow.url);
+    if (bookPageParsed.ok) {
+        result.description = bookPageParsed.description;
+        result.cover = bookPageParsed.cover;
+        result.descriptionNodeCount = bookPageParsed.descriptionNodeCount;
+        result.bookParseWarnings = bookPageParsed.warnings;
+    } else {
+        result.bookParseWarnings = [bookPageParsed.error ?? "Book page parse failed"];
     }
 
     // Extract chapter links
@@ -246,8 +277,11 @@ async function processBook(csvRow, existingCheck) {
         chapterResult.images = parsed.images;
         chapterResult.nodeCount = parsed.nodeCount;
 
-        // Use extracted title if it's more complete than the link text
+        // Use extracted title if it's more complete than the link text.
+        // Remove the provisional slug first so the same base slug doesn't get a -2 suffix
+        // when extractedTitle and link text produce the same slugified form (e.g. "Пролог." → "prolog").
         if (parsed.extractedTitle && parsed.extractedTitle.length > chapterResult.title.length) {
+            usedSlugs.delete(chapterResult.slug);
             chapterResult.title = parsed.extractedTitle;
             chapterResult.slug = normalizeChapterSlug(parsed.extractedTitle, usedSlugs);
         }
@@ -316,6 +350,30 @@ function formatReport(books, crossValidation, mode) {
 
         if (book.alreadyImported) {
             lines.push(`  ↩ Existing migration target: id=${book.alreadyImported.id} slug=${book.alreadyImported.slug}`);
+            if (book.alreadyImported.details) {
+                const d = book.alreadyImported.details;
+                lines.push(`  DB current description: ${d.description != null ? "set (JSONB)" : "NULL"}`);
+                lines.push(`  DB current cover path:  ${d.cover_image_path ?? "NULL"}`);
+            }
+        }
+
+        // Book description report
+        if (book.description) {
+            const nodeStr = Object.entries(book.descriptionNodeCount ?? {}).map(([k, v]) => `${k}:${v}`).join(" ");
+            lines.push(`  Description: ✓ extracted  nodes: [${nodeStr}]`);
+        } else {
+            lines.push(`  Description: — not extracted`);
+        }
+
+        // Cover report
+        if (book.cover) {
+            lines.push(`  Cover:       ✓ detected  src: ${book.cover.src}`);
+        } else {
+            lines.push(`  Cover:       — not detected`);
+        }
+
+        if (book.bookParseWarnings?.length) {
+            for (const w of book.bookParseWarnings) lines.push(`  ⚠ Book parse: ${w}`);
         }
 
         lines.push(`  Chapters found: ${book.chapters.length}`);
@@ -413,6 +471,20 @@ async function runImport(books, supabase) {
         }
         if (bookRecord) {
             console.log(`↩ Book already exists: "${book.title}" (${bookRecord.id})`);
+            // Update description and cover if the book page provided them
+            if (book.description) {
+                await updateBookDescription(supabase, bookRecord.id, book.description);
+                console.log(`  ✓ Description updated`);
+            }
+            if (book.cover?.src) {
+                try {
+                    const uploaded = await uploadCoverImage(supabase, book.cover.src, bookRecord.id);
+                    await updateBookCoverPath(supabase, bookRecord.id, uploaded.path);
+                    console.log(`  ✓ Cover uploaded: ${uploaded.path}`);
+                } catch (err) {
+                    console.warn(`  ⚠ Cover upload failed: ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
         } else {
             // Guard against slug collision without legacy identity — never create slug-2
             const existingBySlug = await findBookBySectionAndSlug(supabase, section.id, book.slug);
@@ -433,6 +505,19 @@ async function runImport(books, supabase) {
                 legacyWpId: book.legacyWpId ?? null,
             });
             console.log(`✓ Book created: "${book.title}" (${bookRecord.id})`);
+            if (book.description) {
+                await updateBookDescription(supabase, bookRecord.id, book.description);
+                console.log(`  ✓ Description written`);
+            }
+            if (book.cover?.src) {
+                try {
+                    const uploaded = await uploadCoverImage(supabase, book.cover.src, bookRecord.id);
+                    await updateBookCoverPath(supabase, bookRecord.id, uploaded.path);
+                    console.log(`  ✓ Cover uploaded: ${uploaded.path}`);
+                } catch (err) {
+                    console.warn(`  ⚠ Cover upload failed: ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
         }
 
         for (const ch of book.chapters) {
@@ -532,6 +617,11 @@ async function main() {
                     if (!sec) return null;
                     return await findBookBySectionAndSlug(supabase, sec.id, bookSlug);
                 },
+                findBookByTitle: async (sectionSlug, title) => {
+                    const sec = await findSectionBySlug(supabase, sectionSlug.toLowerCase());
+                    if (!sec) return null;
+                    return await findBookByTitleInSection(supabase, sec.id, title);
+                },
                 findChapter: (url) => findChapterByLegacyUrl(supabase, url),
                 findChapterByWpId: (wpId) => findChapterByWpId(supabase, wpId),
                 supabase,
@@ -555,6 +645,16 @@ async function main() {
         const book = await processBook(row, existingCheck);
         book.slug = findUniqueSuffix(slugify(row.title), usedBookSlugs);
         usedBookSlugs.add(book.slug);
+
+        // For dry-run: fetch full details of any already-imported book so we can report current DB state
+        if (book.alreadyImported && existingCheck?.supabase) {
+            try {
+                book.alreadyImported.details = await getBookDetails(existingCheck.supabase, book.alreadyImported.id);
+            } catch {
+                // non-fatal — report without details
+            }
+        }
+
         books.push(book);
     }
 
