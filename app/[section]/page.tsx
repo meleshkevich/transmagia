@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookCard } from "@/components/reader/book-card";
+import { BooksByAuthor } from "@/components/reader/books-by-author";
 import { ReaderHeader } from "@/components/reader/reader-header";
 import { getPublishedBooks, getReaderSection } from "@/lib/reader/data";
+
+const GROUPED_SECTIONS = new Set(["translations"]);
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
     const { section: slug } = await params;
@@ -28,7 +31,11 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
                     {section.description && <p className="mt-4 text-lg leading-8 text-muted-foreground">{section.description}</p>}
                 </div>
                 {books.length > 0 ? (
-                    <div className="grid gap-4 lg:grid-cols-2">{books.map((book) => <BookCard key={book.id} book={book} />)}</div>
+                    GROUPED_SECTIONS.has(slug) ? (
+                        <BooksByAuthor books={books} />
+                    ) : (
+                        <div className="grid gap-4 lg:grid-cols-2">{books.map((book) => <BookCard key={book.id} book={book} />)}</div>
+                    )
                 ) : (
                     <p className="border border-dashed border-border bg-background p-8 text-muted-foreground">В этом разделе пока нет опубликованных книг.</p>
                 )}
