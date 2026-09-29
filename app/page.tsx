@@ -61,21 +61,65 @@ export default function Home() {
       </header>
 
       <main id="top">
-        <section id="about" className="mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:pb-28 lg:pt-28">
-          <div className="max-w-2xl self-center">
-            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">Электронная библиотека</p>
-            <h1 className="font-reader text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl">Истории, к которым хочется возвращаться.</h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">Оригинальные новеллы, фанфики и переводы в спокойном пространстве для чтения.</p>
-            <a href="#catalog" className="mt-9 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5">
-              Открыть каталог <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
-          </div>
-          <div className="relative min-h-72 overflow-hidden rounded-2xl bg-[#dfe8e1] p-8 sm:min-h-96 lg:min-h-[27rem]">
-            <div className="absolute -right-16 -top-20 size-64 rounded-full border-[32px] border-white/50" aria-hidden="true" />
-            <div className="absolute bottom-8 left-8 max-w-xs rounded-lg bg-white/80 p-5 backdrop-blur-sm">
-              <BookOpen className="mb-8 size-6 text-teal-800" aria-hidden="true" />
-              <p className="font-reader text-2xl leading-tight text-teal-950">Читайте в своём ритме</p>
+        <section
+          id="about"
+          className="mx-auto max-w-6xl px-5 pb-20 pt-20 lg:px-8 lg:pb-28 lg:pt-28"
+        >
+          <div className="w-full">
+            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Электронная библиотека
+            </p>
+
+            <h1 className="font-reader text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl">
+              Приветствуем тебя, путник!
+            </h1>
+
+            <div className="mt-7 w-full space-y-4 text-lg leading-8 text-muted-foreground">
+              <p>Присаживайся к нашему костру и почитай интересную историю.</p>
+
+              <p>
+                Здесь ты можешь найти много разнообразных сюжетов и жанров: от фанфиков
+                до орижиналов и от переводов тайских новелл до стихов.
+              </p>
+
+              <p>
+                Мы — скромная компания единомышленников, которая любит коротать время за
+                написанием новелл и фанфиков или заниматься переводами с разных языков.
+              </p>
+
+              <p>
+                В какой-то момент нам надоело зависеть от сторонних порталов и мы решили
+                создать свой уютный домик — где живут фантазии, магия и наши переводы.
+              </p>
+
+              <p>
+                Именно поэтому сайт так и называется — <strong>ТрансМагияХауз.</strong>{" "}
+                Где «транс»-от <em>translate</em>, а не то, что Вы подумали :))
+              </p>
+
+              <p>
+                Но прежде, чем подсесть к нашему костру и войти в наш дом — начертай,
+                путник, магическое слово, полученное от Верховного мага(админа). А если
+                нет такого у тебя — то обратись к разделу *контакт* и запроси в личку.
+              </p>
+
+              <p>
+                А также настоятельно рекомендуем прочесть{" "}
+                <strong>ПРАВИЛА ПОЛЬЗОВАНИЯ САЙТОМ</strong>. За нарушение правил путники
+                (читатели) лишаются магических прав и ссылаются в вечный (азко)
+                <strong>БАН.</strong>
+              </p>
+
+              <p>Приятного чтения!</p>
             </div>
+
+            <a
+              href="#catalog"
+              className="mt-9 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            >
+              Открыть каталог
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </a>
           </div>
         </section>
 
