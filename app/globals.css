@@ -223,6 +223,11 @@
     gap: 0.4rem;
   }
 
+  .chapter-copy-guard {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   .reader-content {
     font-family: var(--font-reader), Georgia, serif;
     font-size: var(--reader-font-size, 1.18rem);

@@ -220,3 +220,13 @@ lib/
 ```
 
 The implementation should favor clear boundaries over a large generic framework.
+
+## 18. Chapter Copy Deterrence
+
+Published chapter text rendered by `TiptapRenderer` is wrapped in `ChapterCopyGuard` (`components/reader/chapter-copy-guard.tsx`). The guard suppresses `copy`, `cut`, and `contextmenu` events on the content element, and blocks common clipboard/selection keyboard shortcuts (Ctrl/Cmd + C/X/A/S/P/U) when focus or the current text selection is inside the protected area.
+
+`user-select: none` is applied via the `.chapter-copy-guard` CSS class.
+
+**This is a UX deterrent, not a security or DRM boundary.** It raises the friction for casual copying of protected literary content. Authorized content delivered to a browser cannot be made technically impossible to extract: the browser must be able to render it, and a determined user can always access it through developer tools or network inspection.
+
+Scope: the guard applies only to chapter reading content. Comments, navigation, book descriptions, login/register forms, and the admin Tiptap editor are unaffected.

@@ -15,6 +15,7 @@ import { resolve } from "node:path";
 
 import { fetchWordPressPage, extractChapterLinks, parseChapterHtml, parseBookPage, normalizeUrl } from "./lib/parser.mjs";
 import { slugify, findUniqueSuffix } from "./lib/slug.mjs";
+import { parseCsv } from "./lib/csv.mjs";
 import {
     createSupabaseClient,
     findSectionBySlug,
@@ -40,26 +41,6 @@ function parseArgs(argv) {
     const mode = args.includes("--import") ? "import" : args.includes("--dry-run") ? "dry-run" : null;
     const csvFile = args.find((a) => !a.startsWith("--"));
     return { mode, csvFile };
-}
-
-function parseCsv(content) {
-    const lines = content.trim().split("\n").filter((l) => l.trim());
-    if (lines.length === 0) return [];
-    const firstLower = lines[0].toLowerCase();
-    const startIndex = firstLower.startsWith("title") ? 1 : 0;
-    return lines.slice(startIndex).map((line) => {
-        const parts = [];
-        let current = "";
-        let inQuotes = false;
-        for (const ch of line) {
-            if (ch === '"') { inQuotes = !inQuotes; }
-            else if (ch === "," && !inQuotes) { parts.push(current.trim()); current = ""; }
-            else { current += ch; }
-        }
-        parts.push(current.trim());
-        const [title = "", url = "", section = ""] = parts;
-        return { title: title.trim(), url: url.trim(), section: section.trim() };
-    }).filter((r) => r.title && r.url);
 }
 
 // ── Normalisation ────────────────────────────────────────────────────────────

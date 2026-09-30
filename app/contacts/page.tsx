@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Mail, Send } from "lucide-react";
 
 import { ReaderHeader } from "@/components/reader/reader-header";
 
@@ -18,8 +19,21 @@ export default function ContactsPage() {
                     <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Трансмагия</p>
                     <h1 className="font-reader text-4xl tracking-tight">Контакты</h1>
                     <div className="mt-8 space-y-5 leading-8 text-muted-foreground">
-                        <p>По вопросам публикации, переводов и работы сайта свяжитесь с администрацией проекта.</p>
-                        <p>Электронная почта: <a className="font-semibold text-foreground underline underline-offset-4" href="mailto:hello@transmagia.house">hello@transmagia.house</a></p>
+                        <p>По любому вопросу с нами можно связаться следующим образом:</p>
+                        <div className="space-y-3">
+                            <a href="mailto:iv.venscher@gmail.com" className="flex items-center gap-3 text-foreground hover:text-muted-foreground transition-colors">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border">
+                                    <Mail className="h-4 w-4" />
+                                </span>
+                                <span>iv.venscher@gmail.com</span>
+                            </a>
+                            <a href="https://t.me/bruxa31" className="flex items-center gap-3 text-foreground hover:text-muted-foreground transition-colors">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border">
+                                    <Send className="h-4 w-4" />
+                                </span>
+                                <span>@bruxa31</span>
+                            </a>
+                        </div>
                     </div>
                 </article>
             </main>

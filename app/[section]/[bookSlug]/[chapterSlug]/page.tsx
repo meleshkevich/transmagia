@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ChapterCopyGuard } from "@/components/reader/chapter-copy-guard";
 import { ChapterNavigation } from "@/components/reader/chapter-navigation";
 import { ReaderHeader } from "@/components/reader/reader-header";
 import { ReaderSurface } from "@/components/reader/reader-surface";
@@ -57,7 +58,9 @@ export default async function ChapterPage({ params }: { params: Promise<{ sectio
                     </Link>
                     <h1 className="mt-3 font-reader text-4xl tracking-tight sm:text-5xl">{result.chapter.title}</h1>
                 </header>
-                <TiptapRenderer content={result.content ?? { type: "doc", content: [] }} />
+                <ChapterCopyGuard>
+                    <TiptapRenderer content={result.content ?? { type: "doc", content: [] }} />
+                </ChapterCopyGuard>
                 <CommentsSection chapterId={result.chapter.id} />
                 <ChapterNavigation sectionSlug={sectionSlug} bookSlug={bookSlug} chapters={result.chapters} currentChapterId={result.chapter.id} />
             </main>
