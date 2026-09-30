@@ -1046,3 +1046,100 @@
     color: var(--muted-foreground);
   }
 }
+
+/* ── App Dialog ──────────────────────────────────────────────────────────── */
+
+dialog.app-dialog {
+  padding: 0;
+  margin: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow:
+    0 20px 60px -10px oklch(0 0 0 / 0.2),
+    0 4px 16px -4px oklch(0 0 0 / 0.1);
+  max-width: min(32rem, calc(100vw - 2rem));
+  width: 100%;
+  outline: none;
+  overflow: hidden;
+}
+
+dialog.app-dialog::backdrop {
+  background: oklch(0 0 0 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes app-dialog-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}
+
+dialog.app-dialog[open] {
+  animation: app-dialog-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.app-dialog-title {
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app-dialog-description {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.app-dialog-error {
+  background: color-mix(in oklch, var(--destructive) 8%, transparent);
+  border: 1px solid color-mix(in oklch, var(--destructive) 20%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--destructive);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.app-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.app-dialog-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.app-dialog-input-label {
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.app-dialog-input {
+  background: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  outline: none;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.app-dialog-input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 25%, transparent);
+}

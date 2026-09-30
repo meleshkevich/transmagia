@@ -3,26 +3,30 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { adminDemoteUserAction, adminPromoteUserAction } from "@/app/actions/admin-users";
+import { adminDeleteUserAction } from "@/app/actions/admin-users";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-interface UserRoleButtonProps {
+interface DeleteUserButtonProps {
     userId: string;
-    isCurrentlyAdmin: boolean;
     isSelf: boolean;
 }
 
-export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleButtonProps) {
+const DESCRIPTION = (
+    <>
+        Будут навсегда удалены учётная запись и профиль этого пользователя.{" "}
+        Комментарии этого пользователя будут анонимизированы.{" "}
+        Книги и главы останутся без изменений.
+        <br />
+        <br />
+        Это действие нельзя отменить.
+    </>
+);
+
+export function DeleteUserButton({ userId, isSelf }: DeleteUserButtonProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string>();
     const [pending, startTransition] = useTransition();
-
-    const label = isCurrentlyAdmin ? "Снять права" : "Сделать администратором";
-    const title = isCurrentlyAdmin
-        ? "Снять права администратора?"
-        : "Назначить администратором?";
-    const confirmLabel = isCurrentlyAdmin ? "Снять права" : "Назначить";
 
     function handleClose() {
         if (pending) return;
@@ -33,9 +37,7 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
     function handleConfirm() {
         setError(undefined);
         startTransition(async () => {
-            const result = isCurrentlyAdmin
-                ? await adminDemoteUserAction(userId)
-                : await adminPromoteUserAction(userId);
+            const result = await adminDeleteUserAction(userId);
             if (result.message) {
                 setError(result.message);
             } else {
@@ -45,14 +47,14 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
         });
     }
 
-    if (isSelf && isCurrentlyAdmin) {
+    if (isSelf) {
         return (
             <span
-                className="admin-table-action"
+                className="admin-table-action admin-table-action-danger"
                 style={{ opacity: 0.4, cursor: "not-allowed" }}
-                title="Нельзя снять права у себя"
+                title="Нельзя удалить собственную учётную запись"
             >
-                Снять права
+                Удалить
             </span>
         );
     }
@@ -62,17 +64,18 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
             <button
                 type="button"
                 onClick={() => setOpen(true)}
-                disabled={pending}
-                className="admin-table-action"
+                className="admin-table-action admin-table-action-danger"
             >
-                {pending ? "Изменение…" : label}
+                Удалить
             </button>
             <ConfirmDialog
                 open={open}
                 onClose={handleClose}
                 onConfirm={handleConfirm}
-                title={title}
-                confirmLabel={confirmLabel}
+                title="Удалить пользователя?"
+                description={DESCRIPTION}
+                confirmLabel="Удалить"
+                destructive
                 loading={pending}
                 errorMessage={error}
             />

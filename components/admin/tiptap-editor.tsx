@@ -5,6 +5,9 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import { Bold, ImagePlus, Italic, Link2, List, ListOrdered, Quote, Redo2, Undo2 } from "lucide-react";
+import { useState } from "react";
+
+import { PromptDialog } from "@/components/ui/prompt-dialog";
 
 const emptyDocument = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -25,6 +28,12 @@ function ToolbarButton({ label, onClick, disabled, children }: { label: string; 
 }
 
 export function TiptapEditor({ initialContent, onChange, onUploadImage }: TiptapEditorProps) {
+    const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+    // dialogVersion increments on each open, giving PromptDialog a fresh key
+    // and guaranteeing state reset without setState-in-effect.
+    const [dialogVersion, setDialogVersion] = useState(0);
+    const [currentHref, setCurrentHref] = useState("");
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -51,30 +60,49 @@ export function TiptapEditor({ initialContent, onChange, onUploadImage }: Tiptap
         }
     }
 
+    function openLinkDialog() {
+        setCurrentHref(editor?.getAttributes("link").href ?? "");
+        setDialogVersion((v) => v + 1);
+        setLinkDialogOpen(true);
+    }
+
+    function handleLinkConfirm(href: string) {
+        editor?.chain().focus().setLink({ href }).run();
+    }
+
     return (
-        <div className="admin-editor">
-            <div className="admin-editor-toolbar" aria-label="Панель форматирования">
-                <ToolbarButton label="Отменить" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 /></ToolbarButton>
-                <ToolbarButton label="Повторить" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 /></ToolbarButton>
-                <span className="admin-editor-divider" />
-                <ToolbarButton label="Жирный" onClick={() => editor.chain().focus().toggleBold().run()}><Bold /></ToolbarButton>
-                <ToolbarButton label="Курсив" onClick={() => editor.chain().focus().toggleItalic().run()}><Italic /></ToolbarButton>
-                <ToolbarButton label="Цитата" onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote /></ToolbarButton>
-                <ToolbarButton label="Маркированный список" onClick={() => editor.chain().focus().toggleBulletList().run()}><List /></ToolbarButton>
-                <ToolbarButton label="Нумерованный список" onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered /></ToolbarButton>
-                <ToolbarButton label="Ссылка" onClick={() => {
-                    const href = window.prompt("Введите ссылку");
-                    if (href) editor.chain().focus().setLink({ href }).run();
-                }}><Link2 /></ToolbarButton>
-                {onUploadImage && (
-                    <label className="admin-editor-button" title="Добавить изображение">
-                        <ImagePlus />
-                        <span className="sr-only">Добавить изображение</span>
-                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} hidden />
-                    </label>
-                )}
+        <>
+            <div className="admin-editor">
+                <div className="admin-editor-toolbar" aria-label="Панель форматирования">
+                    <ToolbarButton label="Отменить" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 /></ToolbarButton>
+                    <ToolbarButton label="Повторить" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 /></ToolbarButton>
+                    <span className="admin-editor-divider" />
+                    <ToolbarButton label="Жирный" onClick={() => editor.chain().focus().toggleBold().run()}><Bold /></ToolbarButton>
+                    <ToolbarButton label="Курсив" onClick={() => editor.chain().focus().toggleItalic().run()}><Italic /></ToolbarButton>
+                    <ToolbarButton label="Цитата" onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote /></ToolbarButton>
+                    <ToolbarButton label="Маркированный список" onClick={() => editor.chain().focus().toggleBulletList().run()}><List /></ToolbarButton>
+                    <ToolbarButton label="Нумерованный список" onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered /></ToolbarButton>
+                    <ToolbarButton label="Ссылка" onClick={openLinkDialog}><Link2 /></ToolbarButton>
+                    {onUploadImage && (
+                        <label className="admin-editor-button" title="Добавить изображение">
+                            <ImagePlus />
+                            <span className="sr-only">Добавить изображение</span>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} hidden />
+                        </label>
+                    )}
+                </div>
+                <EditorContent editor={editor} />
             </div>
-            <EditorContent editor={editor} />
-        </div>
+            <PromptDialog
+                key={dialogVersion}
+                open={linkDialogOpen}
+                onClose={() => setLinkDialogOpen(false)}
+                onConfirm={handleLinkConfirm}
+                title="Вставить ссылку"
+                label="URL"
+                initialValue={currentHref}
+                confirmLabel="Вставить"
+            />
+        </>
     );
 }

@@ -1,4 +1,5 @@
 import { CreateUserForm } from "@/components/admin/create-user-form";
+import { DeleteUserButton } from "@/components/admin/delete-user-button";
 import { UserRoleButton } from "@/components/admin/user-role-button";
 import { requireAdmin } from "@/lib/auth/server";
 import { getAdminUsers } from "@/lib/admin/users";
@@ -60,10 +61,14 @@ export default async function AdminUsersPage() {
                                         {dateFormat.format(new Date(u.createdAt))}
                                     </time>
                                 </td>
-                                <td>
+                                <td style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                                     <UserRoleButton
                                         userId={u.id}
                                         isCurrentlyAdmin={u.isAdmin}
+                                        isSelf={u.id === user.id}
+                                    />
+                                    <DeleteUserButton
+                                        userId={u.id}
                                         isSelf={u.id === user.id}
                                     />
                                 </td>

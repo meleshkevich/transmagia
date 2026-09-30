@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireAdmin } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { evaluateDeletion, isValidUUID } from "@/lib/admin/user-deletion-policy";
 
 export type AdminUser = {
     id: string;
@@ -71,6 +72,72 @@ export async function adminCreateUser(
         return {};
     } catch (error) {
         return { message: error instanceof Error ? error.message : "Не удалось создать пользователя." };
+    }
+}
+
+export async function adminDeleteUser(
+    currentUserId: string,
+    targetUserId: string,
+): Promise<UserMutationResult> {
+    try {
+        await requireAdmin();
+
+        // Validate and evaluate before touching the DB
+        if (!isValidUUID(targetUserId)) {
+            return { message: "Некорректный идентификатор пользователя." };
+        }
+        if (currentUserId === targetUserId) {
+            return { message: "Нельзя удалить собственную учётную запись." };
+        }
+
+        const supabase = createSupabaseAdminClient();
+
+        // Load target profile to check role
+        const { data: targetProfile, error: fetchError } = await supabase
+            .from("profiles")
+            .select("id, is_admin")
+            .eq("id", targetUserId)
+            .maybeSingle();
+
+        if (fetchError) {
+            return { message: "Не удалось получить данные пользователя." };
+        }
+
+        // Count admins only when needed (target is an admin)
+        let currentAdminCount = 0;
+        if (targetProfile?.is_admin) {
+            const { count, error: countError } = await supabase
+                .from("profiles")
+                .select("id", { count: "exact", head: true })
+                .eq("is_admin", true);
+
+            if (countError) {
+                return { message: "Не удалось проверить количество администраторов." };
+            }
+            currentAdminCount = count ?? 0;
+        }
+
+        const decision = evaluateDeletion({
+            currentUserId,
+            targetUserId,
+            targetProfile: targetProfile ? { is_admin: targetProfile.is_admin } : null,
+            currentAdminCount,
+        });
+
+        if (!decision.allowed) {
+            return { message: decision.reason };
+        }
+
+        // Delete the Auth user — DB cascade handles profile removal;
+        // comments are anonymized (user_id → NULL) by the existing FK.
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(targetUserId);
+        if (deleteError) {
+            return { message: "Не удалось удалить пользователя." };
+        }
+
+        return {};
+    } catch (error) {
+        return { message: error instanceof Error ? error.message : "Не удалось удалить пользователя." };
     }
 }
 

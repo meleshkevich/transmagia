@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/server";
-import { adminCreateUser, adminSetUserAdminRole } from "@/lib/admin/users";
+import { adminCreateUser, adminDeleteUser, adminSetUserAdminRole } from "@/lib/admin/users";
 
 export type UserActionState = { message?: string; success?: boolean };
 
@@ -33,6 +33,18 @@ export async function adminPromoteUserAction(targetUserId: string): Promise<User
     if (!user) return { message: "Нет доступа." };
 
     const result = await adminSetUserAdminRole(user.id, targetUserId, true);
+    if (!result.message) {
+        revalidatePath("/admin/users");
+        return { success: true };
+    }
+    return result;
+}
+
+export async function adminDeleteUserAction(targetUserId: string): Promise<UserActionState> {
+    const user = await getCurrentUser();
+    if (!user) return { message: "Нет доступа." };
+
+    const result = await adminDeleteUser(user.id, targetUserId);
     if (!result.message) {
         revalidatePath("/admin/users");
         return { success: true };
