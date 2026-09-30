@@ -1,9 +1,11 @@
 import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getCurrentProfile, getCurrentUser, requireAdmin } from "@/lib/auth/server";
+import { getCurrentProfile, requireAdmin } from "@/lib/auth/server";
+
 import { hashSectionPassword, verifySectionPassword } from "@/lib/auth/passwords";
 import { grantSectionAccess, hasValidSectionAccess } from "@/lib/auth/section-access";
+import { evaluateSectionAccess } from "@/lib/auth/access-policy";
 
 type SectionRecord = {
     id: string;
@@ -36,20 +38,10 @@ async function getSection(sectionId: string): Promise<SectionRecord | null> {
 }
 
 export async function canReadSection(sectionId: string): Promise<boolean> {
-    const user = await getCurrentUser();
-    if (user && (await getCurrentProfile())) {
-        return true;
-    }
-
+    const profile = await getCurrentProfile();
     const section = await getSection(sectionId);
-    if (!section) {
-        return false;
-    }
-    if (section.password_hash === null) {
-        return true;
-    }
-
-    return hasValidSectionAccess(sectionId);
+    const hasCookie = section ? await hasValidSectionAccess(sectionId) : false;
+    return evaluateSectionAccess(profile, section, hasCookie).canRead;
 }
 
 export async function canReadBook(bookId: string): Promise<boolean> {
@@ -127,10 +119,13 @@ export async function verifyAndGrantSectionAccess(
     sectionId: string,
     password: string,
 ): Promise<boolean> {
-    const user = await getCurrentUser();
-    if (user && (await getCurrentProfile())) {
-        return true;
-    }
+    const profile = await getCurrentProfile();
+
+    // Anonymous users cannot enter section passwords
+    if (!profile) return false;
+
+    // Admin always has access
+    if (profile.is_admin) return true;
 
     const section = await getSection(sectionId);
     if (!section?.password_hash) {
@@ -138,9 +133,7 @@ export async function verifyAndGrantSectionAccess(
     }
 
     const valid = await verifySectionPassword(password, section.password_hash);
-    if (!valid) {
-        return false;
-    }
+    if (!valid) return false;
 
     await grantSectionAccess(sectionId);
     return true;

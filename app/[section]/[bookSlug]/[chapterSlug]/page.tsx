@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ChapterCopyGuard } from "@/components/reader/chapter-copy-guard";
 import { ChapterNavigation } from "@/components/reader/chapter-navigation";
@@ -9,6 +9,7 @@ import { ReaderSurface } from "@/components/reader/reader-surface";
 import { SectionGate } from "@/components/reader/section-gate";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { CommentsSection } from "@/components/comments/comments-section";
+import { getCurrentProfile } from "@/lib/auth/server";
 import { getChapterPageData, getPublishedChapterMetadata } from "@/lib/reader/data";
 import { decodeParam } from "@/lib/utils";
 
@@ -27,6 +28,13 @@ export default async function ChapterPage({ params }: { params: Promise<{ sectio
     const sectionSlug = decodeParam(rawSection);
     const bookSlug = decodeParam(rawBookSlug);
     const chapterSlug = decodeParam(rawChapterSlug);
+
+    // Redirect anonymous users before hitting the database — they can never read individual content
+    const profile = await getCurrentProfile();
+    if (!profile) {
+        redirect(`/login?next=/${encodeURIComponent(sectionSlug)}/${encodeURIComponent(bookSlug)}/${encodeURIComponent(chapterSlug)}`);
+    }
+
     const result = await getChapterPageData(sectionSlug, bookSlug, chapterSlug);
     if (!result) notFound();
 

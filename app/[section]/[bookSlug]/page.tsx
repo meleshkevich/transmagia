@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ReaderHeader } from "@/components/reader/reader-header";
+import { SectionGate } from "@/components/reader/section-gate";
 import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
+import { getCurrentProfile } from "@/lib/auth/server";
+import { canReadSection } from "@/lib/auth/access";
 import { getPublishedBook, getPublishedChapters } from "@/lib/reader/data";
 import { extractTiptapText } from "@/lib/tiptap-text";
 import { decodeParam } from "@/lib/utils";
@@ -25,6 +28,23 @@ export default async function BookPage({ params }: { params: Promise<{ section: 
     const bookSlug = decodeParam(rawBookSlug);
     const result = await getPublishedBook(sectionSlug, bookSlug);
     if (!result) notFound();
+
+    const profile = await getCurrentProfile();
+    if (!profile) {
+        redirect(`/login?next=/${encodeURIComponent(sectionSlug)}/${encodeURIComponent(bookSlug)}`);
+    }
+
+    const canRead = await canReadSection(result.section.id);
+    if (!canRead) {
+        return (
+            <div className="min-h-screen bg-muted/40">
+                <ReaderHeader sectionName={result.section.name} bookTitle={result.book.title} />
+                <main className="px-5 py-20">
+                    <SectionGate sectionId={result.section.id} redirectTo={`/${sectionSlug}/${bookSlug}`} />
+                </main>
+            </div>
+        );
+    }
 
     const chapters = await getPublishedChapters(result.book.id);
 

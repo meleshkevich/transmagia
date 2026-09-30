@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { BookCard } from "@/components/reader/book-card";
 import { BooksByAuthor } from "@/components/reader/books-by-author";
 import { ReaderHeader } from "@/components/reader/reader-header";
+import { SectionGate } from "@/components/reader/section-gate";
+import { getCurrentProfile } from "@/lib/auth/server";
+import { canReadSection } from "@/lib/auth/access";
+import { isCatalogRestricted } from "@/lib/auth/access-policy";
 import { getPublishedBooks, getReaderSection } from "@/lib/reader/data";
 
 const GROUPED_SECTIONS = new Set(["translations"]);
@@ -18,6 +22,24 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     const { section: slug } = await params;
     const section = await getReaderSection(slug);
     if (!section) notFound();
+
+    if (isCatalogRestricted(slug, section.isProtected)) {
+        const profile = await getCurrentProfile();
+        if (!profile) {
+            redirect(`/login?next=/${encodeURIComponent(slug)}`);
+        }
+        const canRead = await canReadSection(section.id);
+        if (!canRead) {
+            return (
+                <div className="min-h-screen bg-muted/40">
+                    <ReaderHeader sectionName={section.name} />
+                    <main className="px-5 py-20">
+                        <SectionGate sectionId={section.id} redirectTo={`/${slug}`} />
+                    </main>
+                </div>
+            );
+        }
+    }
 
     const books = await getPublishedBooks(slug);
 

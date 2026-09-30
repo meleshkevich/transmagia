@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
                         <Link href="/admin/books">Книги</Link>
                         <Link href="/admin/comments">Комментарии</Link>
                         <Link href="/admin/users">Пользователи</Link>
-                        <span>Разделы</span>
+                        <Link href="/admin/sections">Разделы</Link>
                     </nav>
                 </aside>
                 <main className="min-w-0 flex-1">{children}</main>

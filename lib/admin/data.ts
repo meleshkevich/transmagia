@@ -7,6 +7,7 @@ export type AdminSection = {
     id: string;
     name: string;
     slug: string;
+    isProtected: boolean;
 };
 
 export type AdminBook = {
@@ -40,11 +41,14 @@ export async function getAdminSections(): Promise<AdminSection[]> {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
         .from("sections")
-        .select("id, name, slug")
+        .select("id, name, slug, password_hash")
         .order("name");
 
     if (error) throw new Error("Не удалось получить разделы.");
-    return data ?? [];
+    return (data ?? []).map(({ password_hash, ...rest }) => ({
+        ...rest,
+        isProtected: password_hash !== null,
+    }));
 }
 
 function getCoverImageUrl(path: string | null): string | null {
