@@ -8,7 +8,7 @@ export async function AuthNav() {
 
     if (!profile) {
         return (
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-sm sm:gap-4">
                 <Link href="/login" className="text-muted-foreground hover:text-foreground">Войти</Link>
                 <Link href="/register" className="font-semibold text-foreground">Зарегистрироваться</Link>
             </div>
@@ -16,7 +16,7 @@ export async function AuthNav() {
     }
 
     return (
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-2 text-sm sm:gap-4">
             {profile.is_admin && <Link href="/admin" className="font-semibold text-foreground">Админка</Link>}
             <LogoutForm />
         </div>

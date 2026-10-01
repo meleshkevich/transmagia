@@ -35,14 +35,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/70 bg-background/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 lg:px-8">
-          <a href="#top" className="flex items-center gap-3" aria-label="Трансмагия, на главную">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-y-3 px-5 py-5 lg:px-8">
+          <a href="#top" className="flex shrink-0 items-center gap-3" aria-label="Трансмагия, на главную">
             <span className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground">
               <Feather className="size-5" aria-hidden="true" />
             </span>
             <span className="font-reader text-xl font-semibold tracking-tight">Трансмагия</span>
           </a>
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Основная навигация">
+          <nav className="hidden flex-1 items-center justify-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Основная навигация">
             {navigation.map((item) => (
               item.href.startsWith("#") ? (
                 <a key={item.href} href={item.href} className="transition-colors hover:text-foreground">{item.label}</a>
@@ -51,7 +51,7 @@ export default function Home() {
               )
             ))}
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
             <AuthNav />
             <button className="rounded-md p-2 text-muted-foreground md:hidden" aria-label="Открыть меню">
               <Menu className="size-5" aria-hidden="true" />
@@ -63,18 +63,18 @@ export default function Home() {
       <main id="top">
         <section
           id="about"
-          className="mx-auto max-w-6xl px-5 pb-20 pt-20 lg:px-8 lg:pb-28 lg:pt-28"
+          className="mx-auto max-w-6xl px-5 pb-12 pt-12 sm:pb-20 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-28"
         >
           <div className="w-full">
             <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Электронная библиотека
             </p>
 
-            <h1 className="font-reader text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl">
+            <h1 className="font-reader text-3xl leading-snug tracking-tight text-foreground sm:text-6xl sm:leading-[1.05]">
               Приветствуем тебя, путник!
             </h1>
 
-            <div className="mt-7 w-full space-y-4 text-lg leading-8 text-muted-foreground">
+            <div className="mt-5 w-full space-y-3 text-base leading-7 text-muted-foreground sm:mt-7 sm:space-y-4 sm:text-lg sm:leading-8">
               <p>Присаживайся к нашему костру и почитай интересную историю.</p>
 
               <p>
@@ -115,7 +115,7 @@ export default function Home() {
 
             <a
               href="#catalog"
-              className="mt-9 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="mt-7 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:mt-9"
             >
               Открыть каталог
               <ArrowRight className="size-4" aria-hidden="true" />
