@@ -22,6 +22,7 @@ export type ReaderBook = {
     title: string;
     slug: string;
     author: string | null;
+    authorSortOrder: number;
     description: Record<string, unknown> | null;
     coverImageUrl: string | null;
 };
@@ -80,6 +81,7 @@ function mapBook(book: {
     title: string;
     slug: string;
     author: string | null;
+    author_sort_order: number;
     description: Record<string, unknown> | null;
     cover_image_path: string | null;
 }, section: SectionRow): ReaderBook {
@@ -90,6 +92,7 @@ function mapBook(book: {
         title: book.title,
         slug: book.slug,
         author: book.author,
+        authorSortOrder: book.author_sort_order,
         description: book.description,
         coverImageUrl: null,
     };
@@ -104,10 +107,11 @@ export async function getPublishedBooks(sectionSlug: string): Promise<ReaderBook
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, description, cover_image_path")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path")
         .eq("section_id", section.id)
         .eq("status", "published")
-        .order("created_at", { ascending: false });
+        .order("author", { ascending: true, nullsFirst: false })
+        .order("author_sort_order", { ascending: true });
 
     if (error) {
         throw new Error("Не удалось получить каталог книг.");
@@ -133,7 +137,7 @@ export async function getPublishedBook(
     const supabase = createSupabaseAdminClient();
     const { data: book, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, description, cover_image_path")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path")
         .eq("section_id", section.id)
         .eq("slug", bookSlug)
         .eq("status", "published")

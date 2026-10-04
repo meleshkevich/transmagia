@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { findUniqueSuffix, slugify } from "@/lib/slug";
-import { optionalText, parsePositiveInteger, parseStatus, requiredText, validateImage } from "@/lib/admin/validation";
+import { optionalText, parsePositiveInteger, parseOptionalPositiveInteger, parseStatus, requiredText, validateImage } from "@/lib/admin/validation";
+import { getNextAuthorSortOrder, groupChanged, moveBookInAuthorGroup, reassignBookAuthorGroup } from "@/lib/admin/book-ordering";
 
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const MAX_CONTENT_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -54,6 +55,8 @@ export async function createBook(formData: FormData): Promise<MutationState> {
         const supabase = createSupabaseAdminClient();
         const coverImagePath = cover ? await uploadImage(cover, "book-covers", user.id) : null;
         const slug = await uniqueSlug("books", slugify(title), "section_id", sectionId);
+        // Server-side: compute authoritative position, ignoring any client-provided value.
+        const authorSortOrder = await getNextAuthorSortOrder(sectionId, author);
         const { data, error } = await supabase.from("books").insert({
             section_id: sectionId,
             title,
@@ -62,6 +65,7 @@ export async function createBook(formData: FormData): Promise<MutationState> {
             description,
             cover_image_path: coverImagePath,
             status,
+            author_sort_order: authorSortOrder,
         }).select("id").single();
         if (error || !data) throw new Error("Не удалось сохранить книгу.");
         revalidatePath("/admin/books");
@@ -81,21 +85,36 @@ export async function updateBook(bookId: string, formData: FormData): Promise<Mu
         const description = parseOptionalDescription(formData.get("description"));
         const status = parseStatus(formData.get("status"), formData.get("publish"));
         const cover = validateImage(formData.get("cover"), MAX_COVER_BYTES);
+        const requestedPosition = parseOptionalPositiveInteger(formData.get("authorSortOrder"));
         const supabase = createSupabaseAdminClient();
-        const { data: existing, error: existingError } = await supabase.from("books").select("slug, cover_image_path").eq("id", bookId).single();
+        const { data: existing, error: existingError } = await supabase
+            .from("books")
+            .select("slug, cover_image_path, section_id, author, author_sort_order")
+            .eq("id", bookId)
+            .single();
         if (existingError || !existing) throw new Error("Книга не найдена.");
         const coverImagePath = cover ? await uploadImage(cover, "book-covers", user.id) : existing.cover_image_path;
-        const { error } = await supabase.from("books").update({
-            section_id: sectionId,
-            title,
-            author,
-            description,
-            cover_image_path: coverImagePath,
-            status,
-        }).eq("id", bookId);
+
+        const groupWasReassigned = groupChanged(existing.section_id, existing.author, sectionId, author);
+        if (groupWasReassigned) {
+            // RPC atomically updates section_id, author, and author_sort_order in one statement.
+            await reassignBookAuthorGroup(bookId, sectionId, author);
+        } else if (requestedPosition !== null && requestedPosition !== existing.author_sort_order) {
+            // Same group, position change: atomic in-group reorder.
+            await moveBookInAuthorGroup(bookId, requestedPosition);
+        }
+
+        // When a group reassignment occurred, section_id and author were already set
+        // atomically by the RPC; omit them here to avoid a redundant update.
+        const { error } = await supabase.from("books").update(
+            groupWasReassigned
+                ? { title, description, cover_image_path: coverImagePath, status }
+                : { section_id: sectionId, title, author, description, cover_image_path: coverImagePath, status }
+        ).eq("id", bookId);
         if (error) throw new Error("Не удалось сохранить книгу.");
         revalidatePath("/admin/books");
         revalidatePath(`/admin/books/${bookId}`);
+        revalidatePath("/", "layout");
         return {};
     } catch (error) {
         return errorMessage(error, "Не удалось сохранить книгу.");

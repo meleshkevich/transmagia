@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/server";
+import { getNextAuthorSortOrder } from "@/lib/admin/book-ordering";
 
 export type AdminSection = {
     id: string;
@@ -24,6 +25,7 @@ export type AdminBook = {
     status: "draft" | "published";
     updatedAt: string;
     chapterCount: number;
+    authorSortOrder: number;
 };
 
 export type AdminChapter = {
@@ -67,6 +69,7 @@ function mapBook(book: {
     cover_image_path: string | null;
     status: "draft" | "published";
     updated_at: string;
+    author_sort_order: number;
     sections: { name: string; slug: string } | null;
     chapters: { count: number }[];
 }): AdminBook {
@@ -84,6 +87,7 @@ function mapBook(book: {
         status: book.status,
         updatedAt: book.updated_at,
         chapterCount: book.chapters?.[0]?.count ?? 0,
+        authorSortOrder: book.author_sort_order,
     };
 }
 
@@ -92,7 +96,7 @@ export async function getAdminBooks(): Promise<AdminBook[]> {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, description, cover_image_path, status, updated_at, sections(name, slug), chapters(count)")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path, status, updated_at, sections(name, slug), chapters(count)")
         .order("updated_at", { ascending: false });
 
     if (error) throw new Error("Не удалось получить список книг.");
@@ -104,7 +108,7 @@ export async function getAdminBook(bookId: string): Promise<AdminBook | null> {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, description, cover_image_path, status, updated_at, sections(name, slug), chapters(count)")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path, status, updated_at, sections(name, slug), chapters(count)")
         .eq("id", bookId)
         .maybeSingle();
 
@@ -160,4 +164,16 @@ export async function getAdminChapter(chapterId: string): Promise<{
         },
         content: data.content as Record<string, unknown>,
     };
+}
+
+/**
+ * Returns the next author_sort_order for a new book in the given (section, author) group.
+ * Used by the create-book page to display the expected position.
+ */
+export async function getNextBookSortOrder(
+    sectionId: string,
+    author: string | null,
+): Promise<number> {
+    await requireAdmin();
+    return getNextAuthorSortOrder(sectionId, author);
 }

@@ -29,6 +29,14 @@ export function parsePositiveInteger(value: FormDataEntryValue | null): number {
     return parsed;
 }
 
+/** Returns null when value is absent/empty; throws when present but not a positive integer. */
+export function parseOptionalPositiveInteger(value: FormDataEntryValue | null): number | null {
+    if (value === null || value === "" || (typeof value === "string" && !value.trim())) return null;
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1) throw new Error("Порядок должен быть положительным числом.");
+    return parsed;
+}
+
 export function validateImage(file: FormDataEntryValue | null, maxBytes: number): File | null {
     if (!(file instanceof File) || file.size === 0) return null;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];

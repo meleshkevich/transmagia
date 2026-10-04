@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { groupBooksByAuthor, UNKNOWN_AUTHOR } from "./group-by-author";
 import type { ReaderBook } from "./data";
 
-function makeBook(overrides: { id: string; title: string; author?: string | null }): ReaderBook {
+function makeBook(overrides: { id: string; title: string; author?: string | null; authorSortOrder?: number }): ReaderBook {
     return {
         id: overrides.id,
         sectionId: "s1",
@@ -10,6 +10,7 @@ function makeBook(overrides: { id: string; title: string; author?: string | null
         title: overrides.title,
         slug: overrides.id,
         author: overrides.author ?? null,
+        authorSortOrder: overrides.authorSortOrder ?? 1,
         description: null,
         coverImageUrl: null,
     };
