@@ -11,12 +11,13 @@ import type { CmsActionState } from "@/app/actions/cms";
 type ChapterFormProps = {
     bookId: string;
     chapter?: AdminChapter;
+    defaultSortOrder?: number;
     initialContent: Record<string, unknown>;
     action: (state: CmsActionState | undefined, formData: FormData) => Promise<CmsActionState>;
     uploadImage: (formData: FormData) => Promise<{ path?: string; message?: string }>;
 };
 
-export function ChapterForm({ bookId, chapter, initialContent, action, uploadImage }: ChapterFormProps) {
+export function ChapterForm({ bookId, chapter, defaultSortOrder, initialContent, action, uploadImage }: ChapterFormProps) {
     const [state, formAction, pending] = useActionState(action, undefined);
     const [content, setContent] = useState(initialContent);
     const [uploadMessage, setUploadMessage] = useState<string | undefined>();
@@ -39,7 +40,7 @@ export function ChapterForm({ bookId, chapter, initialContent, action, uploadIma
             <TiptapEditor initialContent={initialContent} onChange={setContent} onUploadImage={handleUpload} />
             <div className="admin-form-grid">
                 <label>Статус<select name="status" defaultValue={chapter?.status ?? "draft"}><option value="draft">Черновик</option><option value="published">Опубликована</option></select></label>
-                <label>Порядок<input name="sortOrder" type="number" min="1" required defaultValue={chapter?.sortOrder ?? 1} /></label>
+                <label>Порядок<input name="sortOrder" type="number" min="1" required defaultValue={chapter?.sortOrder ?? defaultSortOrder ?? 1} /></label>
             </div>
             <div className="admin-form-actions">
                 <Link href={`/admin/books/${bookId}`} className="admin-secondary-button">Отмена</Link>

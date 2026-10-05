@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/server";
 import { getNextAuthorSortOrder } from "@/lib/admin/book-ordering";
+import { nextChapterSortOrder } from "@/lib/admin/chapter-ordering-pure";
 
 export type AdminSection = {
     id: string;
@@ -164,6 +165,24 @@ export async function getAdminChapter(chapterId: string): Promise<{
         },
         content: data.content as Record<string, unknown>,
     };
+}
+
+/**
+ * Returns the next sort_order for a new chapter in the given book (max + 1, or 1).
+ * Scoped to the given bookId; does not consider other books.
+ */
+export async function getNextChapterSortOrder(bookId: string): Promise<number> {
+    await requireAdmin();
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+        .from("chapters")
+        .select("sort_order")
+        .eq("book_id", bookId)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+    if (error) throw new Error("Не удалось определить порядок главы.");
+    const sortOrders = (data ?? []).map((r) => r.sort_order as number);
+    return nextChapterSortOrder(sortOrders);
 }
 
 /**
