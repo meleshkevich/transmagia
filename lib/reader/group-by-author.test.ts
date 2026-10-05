@@ -13,6 +13,7 @@ function makeBook(overrides: { id: string; title: string; author?: string | null
         authorSortOrder: overrides.authorSortOrder ?? 1,
         description: null,
         coverImageUrl: null,
+        status: "published",
     };
 }
 

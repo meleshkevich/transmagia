@@ -41,6 +41,14 @@ export function isCatalogRestricted(slug: string, isProtected: boolean): boolean
  * 5. Authenticated + password-protected + valid cookie → allowed
  * 6. Authenticated + password-protected + no/expired cookie → denied, requiresPassword
  */
+/**
+ * Returns true when a book's status makes it visible to the public.
+ * draft = not public; ongoing = public but unfinished; published = public and finished.
+ */
+export function isPublicBookStatus(status: "draft" | "ongoing" | "published"): boolean {
+    return status === "ongoing" || status === "published";
+}
+
 export function evaluateSectionAccess(
     profile: AccessProfile,
     section: AccessSection,

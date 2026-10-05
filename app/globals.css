@@ -345,6 +345,19 @@
     padding: 1.25rem;
   }
 
+  .book-ongoing-badge {
+    align-self: flex-start;
+    background: #fef3c7;
+    color: #92400e;
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.45rem;
+    padding: 0.2rem 0.45rem;
+    text-transform: uppercase;
+  }
+
   .book-card-body h2 {
     font-family: var(--font-reader), Georgia, serif;
     font-size: 1.4rem;
@@ -569,6 +582,11 @@
   .admin-status-published {
     background: #dcefe8;
     color: #155b47;
+  }
+
+  .admin-status-ongoing {
+    background: #fef3c7;
+    color: #92400e;
   }
 
   .admin-empty {

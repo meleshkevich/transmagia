@@ -18,6 +18,7 @@ export function BookCard({ book }: { book: ReaderBook }) {
                     <div className="book-card-placeholder" aria-hidden="true">Т</div>
                 )}
                 <div className="book-card-body">
+                    {book.status === "ongoing" && <span className="book-ongoing-badge">В работе</span>}
                     <h2>{book.title}</h2>
                     {book.author && <p className="book-author">{book.author}</p>}
                     {descriptionPreview && <p className="book-description">{descriptionPreview}</p>}

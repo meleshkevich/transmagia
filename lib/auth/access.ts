@@ -5,7 +5,7 @@ import { getCurrentProfile, requireAdmin } from "@/lib/auth/server";
 
 import { hashSectionPassword, verifySectionPassword } from "@/lib/auth/passwords";
 import { grantSectionAccess, hasValidSectionAccess } from "@/lib/auth/section-access";
-import { evaluateSectionAccess } from "@/lib/auth/access-policy";
+import { evaluateSectionAccess, isPublicBookStatus } from "@/lib/auth/access-policy";
 
 type SectionRecord = {
     id: string;
@@ -63,7 +63,7 @@ export async function canReadBook(bookId: string): Promise<boolean> {
     if (profile?.is_admin) {
         return true;
     }
-    if (book.status !== "published") {
+    if (!isPublicBookStatus(book.status as "draft" | "ongoing" | "published")) {
         return false;
     }
 

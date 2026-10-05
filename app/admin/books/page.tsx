@@ -14,7 +14,7 @@ export default async function AdminBooksPage() {
                 <table className="admin-table"><thead><tr><th>Книга</th><th>Раздел</th><th>Статус</th><th>Главы</th><th>Изменена</th><th /></tr></thead>
                     <tbody>{books.map((book) => <tr key={book.id}>
                         <td><Link className="admin-table-title" href={`/admin/books/${book.id}`}>{book.title}</Link>{book.author && <span className="admin-table-subtitle">{book.author}</span>}</td>
-                        <td>{book.sectionName}</td><td><span className={`admin-status admin-status-${book.status}`}>{book.status === "published" ? "Опубликована" : "Черновик"}</span></td><td>{book.chapterCount}</td>
+                        <td>{book.sectionName}</td><td><span className={`admin-status admin-status-${book.status}`}>{book.status === "published" ? "Опубликована" : book.status === "ongoing" ? "В работе" : "Черновик"}</span></td><td>{book.chapterCount}</td>
                         <td>{new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(new Date(book.updatedAt))}</td><td><Link href={`/admin/books/${book.id}`} className="admin-table-action">Открыть</Link></td>
                     </tr>)}</tbody>
                 </table>

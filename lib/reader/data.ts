@@ -25,6 +25,8 @@ export type ReaderBook = {
     authorSortOrder: number;
     description: Record<string, unknown> | null;
     coverImageUrl: string | null;
+    // draft books are excluded from public catalog; only ongoing and published reach readers
+    status: "ongoing" | "published";
 };
 
 export type ReaderChapterSummary = {
@@ -84,6 +86,7 @@ function mapBook(book: {
     author_sort_order: number;
     description: Record<string, unknown> | null;
     cover_image_path: string | null;
+    status: "ongoing" | "published";
 }, section: SectionRow): ReaderBook {
     return {
         id: book.id,
@@ -95,6 +98,7 @@ function mapBook(book: {
         authorSortOrder: book.author_sort_order,
         description: book.description,
         coverImageUrl: null,
+        status: book.status,
     };
 }
 
@@ -107,9 +111,9 @@ export async function getPublishedBooks(sectionSlug: string): Promise<ReaderBook
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path, status")
         .eq("section_id", section.id)
-        .eq("status", "published")
+        .in("status", ["ongoing", "published"])
         .order("author", { ascending: true, nullsFirst: false })
         .order("author_sort_order", { ascending: true });
 
@@ -119,7 +123,7 @@ export async function getPublishedBooks(sectionSlug: string): Promise<ReaderBook
 
     return Promise.all(
         (data ?? []).map(async (book) => ({
-            ...mapBook(book, section),
+            ...mapBook(book as typeof book & { status: "ongoing" | "published" }, section),
             coverImageUrl: await getCoverUrl(book.cover_image_path),
         })),
     );
@@ -137,10 +141,10 @@ export async function getPublishedBook(
     const supabase = createSupabaseAdminClient();
     const { data: book, error } = await supabase
         .from("books")
-        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path")
+        .select("id, section_id, title, slug, author, author_sort_order, description, cover_image_path, status")
         .eq("section_id", section.id)
         .eq("slug", bookSlug)
-        .eq("status", "published")
+        .in("status", ["ongoing", "published"])
         .maybeSingle();
 
     if (error) {
@@ -153,7 +157,7 @@ export async function getPublishedBook(
     return {
         section: toReaderSection(section),
         book: {
-            ...mapBook(book, section),
+            ...mapBook(book as typeof book & { status: "ongoing" | "published" }, section),
             coverImageUrl: await getCoverUrl(book.cover_image_path),
         },
     };

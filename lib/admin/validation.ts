@@ -2,13 +2,14 @@ import "server-only";
 
 import { slugify } from "@/lib/slug";
 
-export type AdminStatus = "draft" | "published";
+export type AdminStatus = "draft" | "ongoing" | "published";
 
 export { slugify };
 
 export function parseStatus(value: FormDataEntryValue | null, publishValue?: FormDataEntryValue | null): AdminStatus {
     if (publishValue === "published") return "published";
     if (publishValue === "draft") return "draft";
+    if (value === "ongoing") return "ongoing";
     return value === "published" ? "published" : "draft";
 }
 

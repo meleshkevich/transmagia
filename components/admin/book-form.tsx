@@ -19,7 +19,7 @@ type BookFormProps = {
         author: string | null;
         description: Record<string, unknown> | null;
         sectionId: string;
-        status: "draft" | "published";
+        status: "draft" | "ongoing" | "published";
         authorSortOrder?: number;
     };
     /** Expected next position shown on the create form (read-only). */
@@ -40,7 +40,7 @@ export function BookForm({ sections, action, submitLabel, book, nextAuthorSortOr
             <TiptapEditor initialContent={book?.description ?? EMPTY_DOC} onChange={setDescription} />
             <label>Раздел<select name="sectionId" required defaultValue={book?.sectionId ?? sections[0]?.id ?? ""}>{sections.map((section) => <option key={section.id} value={section.id}>{section.name}</option>)}</select></label>
             <label>Обложка<input name="cover" type="file" accept="image/jpeg,image/png,image/webp" /></label>
-            <label>Статус<select name="status" defaultValue={book?.status ?? "draft"}><option value="draft">Черновик</option><option value="published">Опубликована</option></select></label>
+            <label>Статус<select name="status" defaultValue={book?.status ?? "draft"}><option value="draft">Черновик</option><option value="ongoing">В работе</option><option value="published">Опубликована</option></select></label>
             {book?.authorSortOrder !== undefined ? (
                 <label>
                     Порядок среди книг автора
