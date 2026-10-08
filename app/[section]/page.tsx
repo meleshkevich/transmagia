@@ -11,6 +11,11 @@ import { canReadSection } from "@/lib/auth/access";
 import { isCatalogRestricted } from "@/lib/auth/access-policy";
 import { filterBooksByQuery } from "@/lib/reader/filter-books";
 import { getPublishedBooks, getReaderSection } from "@/lib/reader/data";
+import {
+    getPublishedChapterIdsByBook,
+    getReadChapterIdsForBooks,
+} from "@/lib/reader/reading-progress";
+import { getCompletedBookIds } from "@/lib/reader/book-completion";
 
 const GROUPED_SECTIONS = new Set(["translations"]);
 
@@ -33,8 +38,12 @@ export default async function SectionPage({
 
     const isGrouped = GROUPED_SECTIONS.has(slug);
 
+    const [profile, books] = await Promise.all([
+        getCurrentProfile(),
+        getPublishedBooks(slug),
+    ]);
+
     if (isCatalogRestricted(slug, section.isProtected)) {
-        const profile = await getCurrentProfile();
         if (!profile) {
             redirect(`/login?next=/${encodeURIComponent(slug)}`);
         }
@@ -51,8 +60,6 @@ export default async function SectionPage({
         }
     }
 
-    const books = await getPublishedBooks(slug);
-
     // Search only applies to grouped sections (translations). If we reach this
     // point for a restricted section, access is already verified above.
     const searchQuery = isGrouped
@@ -60,6 +67,19 @@ export default async function SectionPage({
         : "";
 
     const displayBooks = filterBooksByQuery(books, searchQuery);
+
+    // Calculate which books the current user has fully read (all published chapters).
+    // Only for authenticated users — guests never see completion indicators.
+    // Uses two batched queries: published chapters + user's read progress.
+    let completedBookIds = new Set<string>();
+    if (profile && displayBooks.length > 0) {
+        const bookIds = displayBooks.map((b) => b.id);
+        const [publishedByBook, readIds] = await Promise.all([
+            getPublishedChapterIdsByBook(bookIds),
+            getReadChapterIdsForBooks(profile.id, bookIds),
+        ]);
+        completedBookIds = getCompletedBookIds(publishedByBook, readIds);
+    }
 
     // Passed as a prop to keep ReaderHeader a server component while embedding a
     // client search form inside it via React's server→client composition pattern.
@@ -78,9 +98,9 @@ export default async function SectionPage({
                 </div>
                 {displayBooks.length > 0 ? (
                     isGrouped ? (
-                        <BooksByAuthor books={displayBooks} />
+                        <BooksByAuthor books={displayBooks} completedBookIds={completedBookIds} />
                     ) : (
-                        <div className="grid gap-4 lg:grid-cols-2">{displayBooks.map((book) => <BookCard key={book.id} book={book} />)}</div>
+                        <div className="grid gap-4 lg:grid-cols-2">{displayBooks.map((book) => <BookCard key={book.id} book={book} isCompleted={completedBookIds.has(book.id)} />)}</div>
                     )
                 ) : searchQuery ? (
                     <p className="border border-dashed border-border bg-background p-8 text-muted-foreground">Ничего не найдено.</p>

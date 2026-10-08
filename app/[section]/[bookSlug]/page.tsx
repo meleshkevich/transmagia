@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Check } from "lucide-react";
 
 import { ReaderHeader } from "@/components/reader/reader-header";
 import { SectionGate } from "@/components/reader/section-gate";
@@ -8,6 +9,7 @@ import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { canReadSection } from "@/lib/auth/access";
 import { getPublishedBook, getPublishedChapters } from "@/lib/reader/data";
+import { getReadChapterIdsForBook } from "@/lib/reader/reading-progress";
 import { extractTiptapText } from "@/lib/tiptap-text";
 import { decodeParam } from "@/lib/utils";
 
@@ -46,7 +48,10 @@ export default async function BookPage({ params }: { params: Promise<{ section: 
         );
     }
 
-    const chapters = await getPublishedChapters(result.book.id);
+    const [chapters, readIds] = await Promise.all([
+        getPublishedChapters(result.book.id),
+        getReadChapterIdsForBook(profile.id, result.book.id),
+    ]);
 
     return (
         <div className="min-h-screen bg-muted/40">
@@ -69,14 +74,29 @@ export default async function BookPage({ params }: { params: Promise<{ section: 
                     <h2 className="font-reader text-3xl tracking-tight">Главы</h2>
                     {chapters.length > 0 ? (
                         <ol className="mt-5 divide-y divide-border border-y border-border ps-0">
-                            {chapters.map((chapter) => (
-                                <li key={chapter.id} className="block">
-                                    <Link className="flex w-full items-center justify-between gap-4 py-4 hover:bg-background/70 hover:underline" href={`/${result.section.slug}/${result.book.slug}/${chapter.slug}`}>
-                                        <span><span className="mr-3 text-sm text-muted-foreground">{chapter.sortOrder}.</span>{chapter.title}</span>
-                                        <span className="text-sm text-muted-foreground">Читать →</span>
-                                    </Link>
-                                </li>
-                            ))}
+                            {chapters.map((chapter) => {
+                                const isRead = readIds.has(chapter.id);
+                                return (
+                                    <li key={chapter.id} className="block">
+                                        <Link className="flex w-full items-center justify-between gap-4 py-4 hover:bg-background/70 hover:underline" href={`/${result.section.slug}/${result.book.slug}/${chapter.slug}`}>
+                                            <span className="flex min-w-0 items-center gap-2">
+                                                {isRead && (
+                                                    <Check
+                                                        size={15}
+                                                        strokeWidth={2.5}
+                                                        className="chapter-read-icon"
+                                                        aria-label="Прочитано"
+                                                    />
+                                                )}
+                                                <span className="min-w-0">
+                                                    <span className="mr-3 text-sm text-muted-foreground">{chapter.sortOrder}.</span>{chapter.title}
+                                                </span>
+                                            </span>
+                                            <span className="shrink-0 text-sm text-muted-foreground">Читать →</span>
+                                        </Link>
+                                    </li>
+                                );
+                            })}
                         </ol>
                     ) : <p className="mt-5 text-muted-foreground">Опубликованных глав пока нет.</p>}
                 </section>

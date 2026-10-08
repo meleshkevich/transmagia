@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { ChapterCopyGuard } from "@/components/reader/chapter-copy-guard";
 import { ChapterNavigation } from "@/components/reader/chapter-navigation";
+import { ChapterReadCheckbox } from "@/components/reader/chapter-read-checkbox";
 import { ReaderHeader } from "@/components/reader/reader-header";
 import { ReaderSurface } from "@/components/reader/reader-surface";
 import { SectionGate } from "@/components/reader/section-gate";
@@ -11,6 +12,7 @@ import { TiptapRenderer } from "@/components/reader/tiptap-renderer";
 import { CommentsSection } from "@/components/comments/comments-section";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { getChapterPageData, getPublishedChapterMetadata } from "@/lib/reader/data";
+import { getReadChapterIdsForBook } from "@/lib/reader/reading-progress";
 import { decodeParam } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string; bookSlug: string; chapterSlug: string }> }): Promise<Metadata> {
@@ -53,6 +55,10 @@ export default async function ChapterPage({ params }: { params: Promise<{ sectio
 
     const bookHref = `/${sectionSlug}/${bookSlug}`;
 
+    // Load initial read state for this chapter (authenticated user only).
+    const readIds = await getReadChapterIdsForBook(profile.id, result.book.id);
+    const isRead = readIds.has(result.chapter.id);
+
     return (
         <ReaderSurface>
             <ReaderHeader sectionName={result.section.name} bookTitle={result.book.title} />
@@ -69,6 +75,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ sectio
                 <ChapterCopyGuard>
                     <TiptapRenderer content={result.content ?? { type: "doc", content: [] }} />
                 </ChapterCopyGuard>
+                <ChapterReadCheckbox chapterId={result.chapter.id} initialIsRead={isRead} sectionSlug={sectionSlug} bookSlug={bookSlug} />
                 <CommentsSection chapterId={result.chapter.id} />
                 <ChapterNavigation sectionSlug={sectionSlug} bookSlug={bookSlug} chapters={result.chapters} currentChapterId={result.chapter.id} />
             </main>

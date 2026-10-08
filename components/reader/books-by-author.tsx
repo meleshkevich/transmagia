@@ -2,7 +2,12 @@ import type { ReaderBook } from "@/lib/reader/data";
 import { groupBooksByAuthor } from "@/lib/reader/group-by-author";
 import { BookCard } from "./book-card";
 
-export function BooksByAuthor({ books }: { books: ReaderBook[] }) {
+type Props = {
+    books: ReaderBook[];
+    completedBookIds?: Set<string>;
+};
+
+export function BooksByAuthor({ books, completedBookIds }: Props) {
     const groups = groupBooksByAuthor(books);
 
     return (
@@ -14,7 +19,11 @@ export function BooksByAuthor({ books }: { books: ReaderBook[] }) {
                     </h2>
                     <div className="grid gap-4 lg:grid-cols-2">
                         {groupBooks.map((book) => (
-                            <BookCard key={book.id} book={book} />
+                            <BookCard
+                                key={book.id}
+                                book={book}
+                                isCompleted={completedBookIds?.has(book.id) ?? false}
+                            />
                         ))}
                     </div>
                 </section>
