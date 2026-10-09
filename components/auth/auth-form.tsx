@@ -77,6 +77,15 @@ export function AuthForm({ mode, action, registered = false }: AuthFormProps) {
             >
                 {pending ? "Подождите..." : isRegistration ? "Зарегистрироваться" : "Войти"}
             </button>
+            {isRegistration && (
+                <p className="text-center text-xs text-muted-foreground">
+                    Регистрируясь на сайте, вы подтверждаете, что ознакомились с нашей{" "}
+                    <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
+                        Политикой конфиденциальности
+                    </Link>
+                    .
+                </p>
+            )}
             <p className="text-center text-sm text-muted-foreground">
                 {isRegistration ? "Уже есть аккаунт?" : "Нет аккаунта?"}{" "}
                 <Link className="font-semibold text-foreground underline underline-offset-4" href={isRegistration ? "/login" : "/register"}>

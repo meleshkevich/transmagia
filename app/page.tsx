@@ -150,6 +150,7 @@ export default function Home() {
         <div className="flex gap-5">
           <Link href="/rules" className="hover:text-foreground">Правила</Link>
           <Link href="/contacts" className="hover:text-foreground">Контакты</Link>
+          <Link href="/privacy" className="hover:text-foreground">Политика конфиденциальности</Link>
         </div>
       </footer>
     </div>
