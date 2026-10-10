@@ -7,6 +7,7 @@ import { evaluateDeletion, isValidUUID } from "@/lib/admin/user-deletion-policy"
 export type AdminUser = {
     id: string;
     email: string | null;
+    emailConfirmedAt: string | null;
     displayName: string | null;
     isAdmin: boolean;
     createdAt: string;
@@ -24,11 +25,17 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
     if (profilesResult.error) throw new Error("Не удалось получить профили пользователей.");
     if (usersResult.error) throw new Error("Не удалось получить список пользователей.");
 
-    const emailMap = new Map(usersResult.data.users.map((u) => [u.id, u.email ?? null]));
+    const authUserMap = new Map(
+        usersResult.data.users.map((u) => [
+            u.id,
+            { email: u.email ?? null, emailConfirmedAt: u.email_confirmed_at ?? null },
+        ]),
+    );
 
     return (profilesResult.data ?? []).map((profile) => ({
         id: profile.id,
-        email: emailMap.get(profile.id) ?? null,
+        email: authUserMap.get(profile.id)?.email ?? null,
+        emailConfirmedAt: authUserMap.get(profile.id)?.emailConfirmedAt ?? null,
         displayName: profile.display_name,
         isAdmin: profile.is_admin,
         createdAt: profile.created_at,

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldMinus, ShieldPlus } from "lucide-react";
 
 import { adminDemoteUserAction, adminPromoteUserAction } from "@/app/actions/admin-users";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -18,10 +19,8 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
     const [error, setError] = useState<string>();
     const [pending, startTransition] = useTransition();
 
-    const label = isCurrentlyAdmin ? "Снять права" : "Сделать администратором";
-    const title = isCurrentlyAdmin
-        ? "Снять права администратора?"
-        : "Назначить администратором?";
+    const ariaLabel = isCurrentlyAdmin ? "Снять права администратора" : "Сделать администратором";
+    const dialogTitle = isCurrentlyAdmin ? "Снять права администратора?" : "Назначить администратором?";
     const confirmLabel = isCurrentlyAdmin ? "Снять права" : "Назначить";
 
     function handleClose() {
@@ -47,13 +46,15 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
 
     if (isSelf && isCurrentlyAdmin) {
         return (
-            <span
+            <button
+                type="button"
+                disabled
                 className="admin-table-action"
-                style={{ opacity: 0.4, cursor: "not-allowed" }}
-                title="Нельзя снять права у себя"
+                aria-label="Снять права администратора"
+                title="Нельзя снять права администратора у самого себя"
             >
-                Снять права
-            </span>
+                <ShieldMinus aria-hidden="true" />
+            </button>
         );
     }
 
@@ -64,14 +65,19 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
                 onClick={() => setOpen(true)}
                 disabled={pending}
                 className="admin-table-action"
+                aria-label={ariaLabel}
+                title={ariaLabel}
             >
-                {pending ? "Изменение…" : label}
+                {isCurrentlyAdmin
+                    ? <ShieldMinus aria-hidden="true" />
+                    : <ShieldPlus className="text-green-700 dark:text-green-400" aria-hidden="true" />
+                }
             </button>
             <ConfirmDialog
                 open={open}
                 onClose={handleClose}
                 onConfirm={handleConfirm}
-                title={title}
+                title={dialogTitle}
                 confirmLabel={confirmLabel}
                 loading={pending}
                 errorMessage={error}

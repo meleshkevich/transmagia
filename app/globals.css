@@ -563,12 +563,18 @@
 
   .admin-table-action {
     color: var(--muted-foreground);
+    cursor: pointer;
     font-size: 0.85rem;
   }
 
-  .admin-table-action:hover {
+  .admin-table-action:not(:disabled):hover {
     color: var(--foreground);
     text-decoration: underline;
+  }
+
+  .admin-table-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
   }
 
   .admin-status {
@@ -1052,7 +1058,7 @@
     color: var(--destructive);
   }
 
-  .admin-table-action-danger:hover {
+  .admin-table-action-danger:not(:disabled):hover {
     color: var(--destructive);
   }
 

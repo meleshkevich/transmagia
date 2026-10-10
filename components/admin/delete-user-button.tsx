@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 import { adminDeleteUserAction } from "@/app/actions/admin-users";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -49,13 +50,15 @@ export function DeleteUserButton({ userId, isSelf }: DeleteUserButtonProps) {
 
     if (isSelf) {
         return (
-            <span
+            <button
+                type="button"
+                disabled
                 className="admin-table-action admin-table-action-danger"
-                style={{ opacity: 0.4, cursor: "not-allowed" }}
+                aria-label="Удалить пользователя"
                 title="Нельзя удалить собственную учётную запись"
             >
-                Удалить
-            </span>
+                <Trash2 aria-hidden="true" />
+            </button>
         );
     }
 
@@ -65,8 +68,10 @@ export function DeleteUserButton({ userId, isSelf }: DeleteUserButtonProps) {
                 type="button"
                 onClick={() => setOpen(true)}
                 className="admin-table-action admin-table-action-danger"
+                aria-label="Удалить пользователя"
+                title="Удалить пользователя"
             >
-                Удалить
+                <Trash2 aria-hidden="true" />
             </button>
             <ConfirmDialog
                 open={open}
