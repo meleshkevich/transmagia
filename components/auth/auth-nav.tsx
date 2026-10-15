@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogIn } from "lucide-react";
 
 import { getCurrentProfile } from "@/lib/auth/server";
 import { LogoutForm } from "@/components/auth/logout-form";
@@ -8,9 +9,15 @@ export async function AuthNav() {
 
     if (!profile) {
         return (
-            <div className="flex items-center gap-2 text-sm sm:gap-4">
-                <Link href="/login" className="text-muted-foreground hover:text-foreground">Войти</Link>
-                <Link href="/register" className="font-semibold text-foreground">Зарегистрироваться</Link>
+            <div className="flex items-center">
+                <Link
+                    href="/login"
+                    className="rounded p-1.5 text-muted-foreground hover:text-foreground"
+                    aria-label="Войти"
+                    title="Войти"
+                >
+                    <LogIn size={18} aria-hidden="true" />
+                </Link>
             </div>
         );
     }
