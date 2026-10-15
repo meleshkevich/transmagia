@@ -1,7 +1,9 @@
-import { ArrowRight, BookOpen, Feather, Menu } from "lucide-react";
+import { ArrowRight, Feather } from "lucide-react";
 import Link from "next/link";
 
 import { AuthNav } from "@/components/auth/auth-nav";
+import { MobileMenu } from "@/components/mobile-menu";
+import { getCurrentProfile } from "@/lib/auth/server";
 
 const navigation = [
   { href: "#about", label: "О нас" },
@@ -31,7 +33,9 @@ const sections = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getCurrentProfile();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/70 bg-background/95">
@@ -53,9 +57,7 @@ export default function Home() {
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
             <AuthNav />
-            <button className="rounded-md p-2 text-muted-foreground md:hidden" aria-label="Открыть меню">
-              <Menu className="size-5" aria-hidden="true" />
-            </button>
+            <MobileMenu isAuthenticated={Boolean(profile)} />
           </div>
         </div>
       </header>

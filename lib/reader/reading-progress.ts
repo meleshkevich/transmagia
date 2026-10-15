@@ -11,7 +11,7 @@ const PAGE_SIZE = 500;
  * fewer rows than PAGE_SIZE (indicating the last page). Throws if any page
  * returns an error — a partial result is never silently returned as complete.
  */
-async function fetchAllPages<T>(
+export async function fetchAllPages<T>(
     buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
 ): Promise<T[]> {
     const all: T[] = [];

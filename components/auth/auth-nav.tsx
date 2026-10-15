@@ -17,6 +17,7 @@ export async function AuthNav() {
 
     return (
         <div className="flex items-center gap-2 text-sm sm:gap-4">
+            <Link href="/my-books" className="hidden text-muted-foreground hover:text-foreground md:inline">Мои книги</Link>
             {profile.is_admin && <Link href="/admin" className="font-semibold text-foreground">Админка</Link>}
             <LogoutForm />
         </div>
