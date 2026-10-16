@@ -34,7 +34,7 @@ export function TranslationsSearch({ sectionSlug, currentQuery }: TranslationsSe
                     defaultValue={currentQuery}
                     placeholder="Поиск..."
                     autoComplete="off"
-                    className="h-8 w-60 border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="h-8 w-40 border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 {currentQuery && (
                     <button

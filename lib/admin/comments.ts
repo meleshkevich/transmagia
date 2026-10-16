@@ -2,6 +2,7 @@ import "server-only";
 
 import { requireAdmin } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { resolveAuthorName } from "@/lib/profile/resolve-author-name";
 
 export type AdminComment = {
     id: string;
@@ -38,7 +39,7 @@ export async function getAdminComments(): Promise<AdminComment[]> {
             content: comment.content,
             status: comment.status as "published" | "deleted",
             createdAt: comment.created_at,
-            authorName: profile?.display_name ?? "Удалённый пользователь",
+            authorName: resolveAuthorName(profile),
             chapterTitle: chapter?.title ?? "Неизвестная глава",
             bookId: chapter?.books?.id ?? "",
             bookTitle: chapter?.books?.title ?? "Неизвестная книга",

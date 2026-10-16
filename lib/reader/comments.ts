@@ -3,6 +3,7 @@ import "server-only";
 import { getCurrentProfile } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { canDeleteComment } from "./comment-auth";
+import { resolveAuthorName } from "@/lib/profile/resolve-author-name";
 
 export type ChapterComment = {
     id: string;
@@ -27,8 +28,7 @@ export async function getChapterComments(chapterId: string): Promise<ChapterComm
 
     return (data ?? []).map((comment) => {
         const profile = comment.profiles as unknown as { display_name: string | null } | null;
-        const authorName =
-            profile === null ? "Удалённый пользователь" : (profile.display_name ?? "Читатель");
+        const authorName = resolveAuthorName(profile);
         return {
             id: comment.id,
             content: comment.content,

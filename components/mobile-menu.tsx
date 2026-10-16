@@ -62,13 +62,22 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
                         ),
                     )}
                     {isAuthenticated && (
-                        <Link
-                            href="/my-books"
-                            className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                            onClick={() => setOpen(false)}
-                        >
-                            Мои книги
-                        </Link>
+                        <>
+                            <Link
+                                href="/my-books"
+                                className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                                onClick={() => setOpen(false)}
+                            >
+                                Мои книги
+                            </Link>
+                            <Link
+                                href="/profile"
+                                className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                                onClick={() => setOpen(false)}
+                            >
+                                Мой профиль
+                            </Link>
+                        </>
                     )}
                 </nav>
             )}

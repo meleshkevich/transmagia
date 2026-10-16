@@ -37,7 +37,7 @@ export default async function AdminCommentsPage() {
                         {comments.map((comment) => (
                             <tr key={comment.id}>
                                 <td>
-                                    <span className="admin-table-title" style={{ cursor: "default" }}>
+                                    <span className="admin-table-title">
                                         {comment.authorName}
                                     </span>
                                 </td>
@@ -49,7 +49,7 @@ export default async function AdminCommentsPage() {
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="admin-table-title" style={{ cursor: "default" }}>
+                                    <span className="admin-table-title">
                                         {comment.chapterTitle}
                                     </span>
                                     <span className="admin-table-subtitle">{comment.bookTitle}</span>

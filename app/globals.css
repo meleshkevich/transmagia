@@ -543,7 +543,8 @@
     font-weight: 700;
   }
 
-  .admin-table-title:hover {
+  a.admin-table-title:hover,
+  button.admin-table-title:hover {
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }

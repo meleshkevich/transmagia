@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { LogIn, UserRound } from "lucide-react";
 
 import { getCurrentProfile } from "@/lib/auth/server";
 import { LogoutForm } from "@/components/auth/logout-form";
@@ -26,6 +26,14 @@ export async function AuthNav() {
         <div className="flex items-center gap-2 text-sm sm:gap-4">
             <Link href="/my-books" className="hidden text-muted-foreground hover:text-foreground md:inline">Мои книги</Link>
             {profile.is_admin && <Link href="/admin" className="font-semibold text-foreground">Админка</Link>}
+            <Link
+                href="/profile"
+                className="rounded p-1.5 text-muted-foreground hover:text-foreground"
+                aria-label="Мой профиль"
+                title="Мой профиль"
+            >
+                <UserRound size={18} aria-hidden="true" />
+            </Link>
             <LogoutForm />
         </div>
     );
