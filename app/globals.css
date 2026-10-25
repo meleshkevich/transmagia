@@ -1069,6 +1069,78 @@
     padding: 0.75rem 1rem;
   }
 
+  /* ── Admin accordions ──────────────────────────────────────────────────── */
+
+  .admin-accordion {
+    background: var(--background);
+    border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-accordion-trigger {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font-family: var(--font-reader), Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    gap: 0.75rem;
+    justify-content: space-between;
+    min-height: 3.5rem;
+    padding: 1rem 1.5rem;
+    text-align: left;
+    width: 100%;
+  }
+
+  .admin-accordion-trigger:hover {
+    background: var(--muted);
+  }
+
+  .admin-accordion-trigger:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+
+  .admin-accordion-chevron {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .admin-accordion-chevron {
+      transition: none;
+    }
+  }
+
+  .admin-accordion-chevron-open {
+    transform: rotate(180deg);
+  }
+
+  .admin-accordion-content {
+    border-top: 1px solid var(--border);
+  }
+
+  .admin-accordion-table {
+    border: none;
+  }
+
+  .admin-accordion-error {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .admin-accordion-error p {
+    background: #fff0ef;
+    border: 1px solid #f0b8b2;
+    color: #8d2820;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+  }
+
   .admin-status-deleted {
     background: var(--muted);
     color: var(--muted-foreground);

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/server";
-import { adminCreateUser, adminDeleteUser, adminSetUserAdminRole } from "@/lib/admin/users";
+import { adminCreateUser, adminDeleteUser, adminSetUserAdminRole, getAdminUsers } from "@/lib/admin/users";
+import type { AdminUser } from "@/lib/admin/users";
 
 export type UserActionState = { message?: string; success?: boolean };
 
@@ -62,4 +63,13 @@ export async function adminDemoteUserAction(targetUserId: string): Promise<UserA
         return { success: true };
     }
     return result;
+}
+
+export async function adminGetUsersAction(): Promise<{ users?: AdminUser[]; error?: string }> {
+    try {
+        const users = await getAdminUsers();
+        return { users };
+    } catch {
+        return { error: "Не удалось загрузить список пользователей." };
+    }
 }
