@@ -11,9 +11,10 @@ interface UserRoleButtonProps {
     userId: string;
     isCurrentlyAdmin: boolean;
     isSelf: boolean;
+    onSuccess?: () => void;
 }
 
-export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleButtonProps) {
+export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf, onSuccess }: UserRoleButtonProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string>();
@@ -39,6 +40,7 @@ export function UserRoleButton({ userId, isCurrentlyAdmin, isSelf }: UserRoleBut
                 setError(result.message);
             } else {
                 setOpen(false);
+                onSuccess?.();
                 router.refresh();
             }
         });

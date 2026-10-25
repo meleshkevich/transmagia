@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 interface DeleteUserButtonProps {
     userId: string;
     isSelf: boolean;
+    onSuccess?: () => void;
 }
 
 const DESCRIPTION = (
@@ -23,7 +24,7 @@ const DESCRIPTION = (
     </>
 );
 
-export function DeleteUserButton({ userId, isSelf }: DeleteUserButtonProps) {
+export function DeleteUserButton({ userId, isSelf, onSuccess }: DeleteUserButtonProps) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string>();
@@ -43,6 +44,7 @@ export function DeleteUserButton({ userId, isSelf }: DeleteUserButtonProps) {
                 setError(result.message);
             } else {
                 setOpen(false);
+                onSuccess?.();
                 router.refresh();
             }
         });
